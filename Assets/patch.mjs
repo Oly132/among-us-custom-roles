@@ -1,0 +1,14 @@
+import fs from 'node:fs';
+import path from 'node:path';
+const root=process.argv[2];
+if(!root) throw new Error('Provide an extracted BetterCrewLink app directory.');
+const main=path.join(root,'out/main/index.js');
+const html=path.join(root,'out/renderer/index.html');
+let source=fs.readFileSync(main,'utf8');
+if(!source.includes("import fs from") || !source.includes('ipcMain.handle') || !fs.existsSync(path.join(root,'out/preload/index.mjs'))) throw new Error('Unsupported BetterCrewLink build. Original copy preserved.');
+if(!source.includes('forger-silence-state')) fs.appendFileSync(main,'\n'+fs.readFileSync(new URL('./main-bridge.js',import.meta.url),'utf8'));
+fs.copyFileSync(new URL('./renderer-bridge.js',import.meta.url),path.join(root,'out/renderer/silencer-bridge.js'));
+let page=fs.readFileSync(html,'utf8');
+if(!page.includes('silencer-bridge.js')) page=page.replace('<head>','<head>\n<script src="./silencer-bridge.js"></script>');
+fs.writeFileSync(html,page);
+console.log('Silencer voice bridge applied.');
