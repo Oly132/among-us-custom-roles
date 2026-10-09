@@ -62,12 +62,18 @@ public sealed class AutoUpdateUI:MonoBehaviour
             var game=Paths.GameRootPath;
             var node=Path.Combine(game,"ForgerSetup","Voice","runtime","node.exe");
             if(!File.Exists(node))throw new Exception("Updater runtime missing. Install the next full release first.");
+            // Run a cached bootstrap copy so this release can replace its own runtime.
+            string hash;
+            using(var stream=File.OpenRead(node))using(var sha=System.Security.Cryptography.SHA256.Create())hash=Convert.ToHexString(sha.ComputeHash(stream)).ToLowerInvariant();
+            var bootstrap=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"Forger","Updater",hash);
+            Directory.CreateDirectory(bootstrap);var runner=Path.Combine(bootstrap,"node.exe");
+            if(!File.Exists(runner))File.Copy(node,runner);
             var folder=Path.Combine(game,"ForgerSetup","Updater");Directory.CreateDirectory(folder);
             var script=Path.Combine(folder,"apply-update.mjs");
             using(var source=typeof(Plugin).Assembly.GetManifestResourceStream("Forger.Assets.apply-update.mjs")!)
             using(var output=File.Create(script))source.CopyTo(output);
             var plan=Path.Combine(folder,"manifest.json");File.WriteAllText(plan,manifest!);
-            var start=new ProcessStartInfo(node){UseShellExecute=false,CreateNoWindow=true,WorkingDirectory=folder};
+            var start=new ProcessStartInfo(runner){UseShellExecute=false,CreateNoWindow=true,WorkingDirectory=folder};
             foreach(var arg in new[]{script,"--apply",game,Environment.ProcessId.ToString(),plan})start.ArgumentList.Add(arg);
             var process=Process.Start(start)??throw new Exception("Updater could not start");
             starting=true;Application.Quit();

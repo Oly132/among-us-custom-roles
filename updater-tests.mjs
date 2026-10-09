@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';import fs from 'node:fs';import os from 'node:os';import path from 'node:path';import crypto from 'node:crypto';
-import {validate,destination,changedFiles,applyFiles,repository,gameHash} from './Assets/apply-update.mjs';
+import {validate,destination,changedFiles,applyFiles,stageFiles,repository,gameHash} from './Assets/apply-update.mjs';
 const root=fs.mkdtempSync(path.join(os.tmpdir(),'forger-updater-'));const cache=path.join(root,'cache');fs.mkdirSync(cache);
 const sha=content=>crypto.createHash('sha256').update(content).digest('hex');
 const make=(p,content)=>({target:'game',path:p,size:Buffer.byteLength(content),sha256:sha(content),url:`https://github.com/${repository}/releases/download/v0.15.0/${sha(content)}.bin`});
@@ -14,4 +14,9 @@ fs.writeFileSync(path.join(root,a.path),'old mod');const c=make('dotnet/new.dll'
 assert.throws(()=>applyFiles([a,c],{game:root},cache,path.join(root,'rollback')));assert.equal(fs.readFileSync(path.join(root,a.path),'utf8'),'old mod');assert.equal(fs.existsSync(path.join(root,c.path)),false);
 assert.deepEqual(changedFiles({...manifest,files:[{...a,target:'voice',path:'resources/app.asar'}]},{game:root,voice:null}),[]);
 assert.equal(destination(root,a.path),path.join(root,...a.path.split('/')));
+const downloadCache=path.join(root,'downloads');let calls=0;
+await stageFiles([a],downloadCache,async()=>{calls++;return new Response('new mod');});
+await stageFiles([a],downloadCache,async()=>{throw Error('cached file should not download again');});assert.equal(calls,1);
+const failedCache=path.join(root,'failed');await assert.rejects(stageFiles([a],failedCache,async()=>new Response('bad')));assert.equal(fs.existsSync(path.join(failedCache,a.sha256)),false);
+await assert.rejects(stageFiles([a],failedCache,async()=>new Response('missing',{status:404})));assert.equal(fs.readFileSync(path.join(root,a.path),'utf8'),'old mod');
 console.log('PASS: only changed files; path and URL rejection; duplicate rejection; checksum verification; rollback; optional voice installation.');
