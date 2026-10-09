@@ -4,6 +4,10 @@ Custom roles for Among Us v19s, build 7489: Forger, Puppeteer, Faker, Silencer, 
 
 This repository contains the clean player source. Testing controls and debug role runners are excluded. Among Us and third-party dependency binaries are not included in source control. No player logs, credentials or personal configuration are included.
 
+## Role guide
+
+[Read the full role guide](ROLES.md) for abilities, teams, win conditions, limits and default settings. It covers all ten released custom roles and clearly marks Thief as upcoming.
+
 ## Releases and updates
 
 Download the Windows full installer from [GitHub Releases](https://github.com/Oly132/among-us-custom-roles/releases/latest). The Steam Deck package is experimental. Version 0.15.0 includes the automatic updater and the latest multiplayer/UI fixes.
@@ -29,3 +33,4 @@ The output DLL is `bin/Release/net6.0/Forger.dll`. Keep the game closed before r
 Build this clean source, update the plugin version, and prepare a payload folder containing only managed mod/dependency files. Run `prepare-release.py` with the payload, version, tag and output folder. Optionally supply the rebuilt Silencer CrewLink `resources/app.asar` with `--voice-asar`. Supply `--server-url` to merge a new HTTPS Impostor region address while preserving official regions and the player's selected region. This creates a manifest and one asset per unique changed-content hash. Upload all generated assets to the matching GitHub Release, make it the latest stable release, then publish it. The updater never installs prerelease/draft content through the latest stable URL.
 
 Do not publish game binaries, generated game interop assemblies, personal configuration, or developer testing builds. Release assets must come from the clean build and belong to this repository. The manifest pins the supported GameAssembly hash and restricts file destinations and download URLs.
+
