@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <GameDir Condition="'$(GameDir)' == ''">../../work/ForgerGame</GameDir>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="$(GameDir)/BepInEx/interop/Unity.Addressables.dll" />
+    <Reference Include="$(GameDir)/BepInEx/interop/Unity.ResourceManager.dll" />
+    <Reference Include="$(GameDir)/BepInEx/core/BepInEx.Core.dll" />
+    <Reference Include="$(GameDir)/BepInEx/core/BepInEx.Unity.IL2CPP.dll" />
+    <Reference Include="$(GameDir)/BepInEx/core/Il2CppInterop.Runtime.dll" />
+    <Reference Include="$(GameDir)/BepInEx/core/0Harmony.dll" />
+    <Reference Include="$(GameDir)/BepInEx/interop/Assembly-CSharp.dll" />
+    <Reference Include="$(GameDir)/BepInEx/interop/Assembly-CSharp-firstpass.dll" />
+    <Reference Include="$(GameDir)/BepInEx/interop/Il2Cppmscorlib.dll" />
+    <Reference Include="$(GameDir)/BepInEx/interop/Il2CppSystem.dll" />
+    <Reference Include="$(GameDir)/BepInEx/interop/Hazel.dll" />
+    <Reference Include="$(GameDir)/BepInEx/interop/UnityEngine*.dll" />
+    <Reference Include="$(GameDir)/BepInEx/interop/Unity.TextMeshPro.dll" />
+    <EmbeddedResource Include="Assets/eat.png" /><EmbeddedResource Include="Assets/unleash.png" />
+    <EmbeddedResource Include="Assets/explode.png" /><EmbeddedResource Include="Assets/binocular.png" />
+    <EmbeddedResource Include="Assets/forge-stamp.png" />
+    <EmbeddedResource Include="Assets/possess.png" />
+    <EmbeddedResource Include="Assets/fake-task.png" /><EmbeddedResource Include="Assets/silence.png" />
+    <EmbeddedResource Include="Assets/apply-update.mjs" />
+  </ItemGroup>
+</Project>
+
+
+
+

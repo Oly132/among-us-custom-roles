@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';import fs from 'node:fs';import os from 'node:os';import path from 'node:path';import crypto from 'node:crypto';
+import {validate,destination,changedFiles,applyFiles,repository,gameHash} from './Assets/apply-update.mjs';
+const root=fs.mkdtempSync(path.join(os.tmpdir(),'forger-updater-'));const cache=path.join(root,'cache');fs.mkdirSync(cache);
+const sha=content=>crypto.createHash('sha256').update(content).digest('hex');
+const make=(p,content)=>({target:'game',path:p,size:Buffer.byteLength(content),sha256:sha(content),url:`https://github.com/${repository}/releases/download/v0.15.0/${sha(content)}.bin`});
+const a=make('BepInEx/plugins/Forger.dll','new mod'),b=make('dotnet/runtime.dll','unchanged');
+const manifest={schema:1,repository,version:'0.15.0',gameAssemblySha256:gameHash,files:[a,b]};
+fs.mkdirSync(path.join(root,'BepInEx/plugins'),{recursive:true});fs.mkdirSync(path.join(root,'dotnet'));fs.writeFileSync(path.join(root,a.path),'old mod');fs.writeFileSync(path.join(root,b.path),'unchanged');
+assert.deepEqual(changedFiles(manifest,{game:root}),[a]);
+for(const p of ['../escape.dll','BepInEx/plugins/../../config.cfg','C:/outside','BepInEx/config/user.cfg','Among Us.exe'])assert.throws(()=>validate({...manifest,files:[{...a,path:p}]}));
+assert.throws(()=>validate({...manifest,files:[a,a]}));assert.throws(()=>validate({...manifest,files:[{...a,url:'https://example.com/mod.dll'}]}));assert.throws(()=>validate({...manifest,files:[{...a,sha256:'bad'}]}));
+fs.writeFileSync(path.join(cache,a.sha256),'new mod');applyFiles([a],{game:root},cache,path.join(root,'backup'));assert.equal(fs.readFileSync(path.join(root,a.path),'utf8'),'new mod');
+fs.writeFileSync(path.join(root,a.path),'old mod');const c=make('dotnet/new.dll','another');fs.writeFileSync(path.join(cache,c.sha256),'corrupted');
+assert.throws(()=>applyFiles([a,c],{game:root},cache,path.join(root,'rollback')));assert.equal(fs.readFileSync(path.join(root,a.path),'utf8'),'old mod');assert.equal(fs.existsSync(path.join(root,c.path)),false);
+assert.deepEqual(changedFiles({...manifest,files:[{...a,target:'voice',path:'resources/app.asar'}]},{game:root,voice:null}),[]);
+assert.equal(destination(root,a.path),path.join(root,...a.path.split('/')));
+console.log('PASS: only changed files; path and URL rejection; duplicate rejection; checksum verification; rollback; optional voice installation.');
