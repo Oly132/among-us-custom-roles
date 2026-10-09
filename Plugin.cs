@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace Forger;
 
-[BepInPlugin("local.olivi.forger", "Forger", "0.14.1")]
+[BepInPlugin("local.olivi.forger", "Forger", "0.15.0")]
 public sealed class Plugin : BasePlugin
 {
     internal static Plugin Instance = null!;

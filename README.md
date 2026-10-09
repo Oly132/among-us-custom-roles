@@ -6,7 +6,7 @@ This repository contains the clean player source. Testing controls and debug rol
 
 ## Releases and updates
 
-There is no release published yet. Do not download unrelated binaries claiming to be this mod.
+Download the Windows full installer from [GitHub Releases](https://github.com/Oly132/among-us-custom-roles/releases/latest). The Steam Deck package is experimental. Version 0.15.0 includes the automatic updater and the latest multiplayer/UI fixes.
 
 The mod checks the latest GitHub Release on each launch, including when custom roles are disabled. If a newer release has an `update-manifest.json` asset, the main menu asks whether to download it. Choosing Yes closes the game. Close Silencer CrewLink too. Launch through Steam after the update finishes. Choosing Not now postpones the update until the next launch.
 
