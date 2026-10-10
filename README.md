@@ -1,36 +1,30 @@
 # Among Us Custom Roles
 
-Custom roles for Among Us v19s, build 7489: Forger, Puppeteer, Faker, Silencer, Cannibal, The Fat Guy, Dog Owner, Terrorist, Binocular and Evil Engineer. Every player needs the mod. Android support is deferred; Steam Deck support is experimental.
+Every player needs the mod. Eleven custom roles: Forger, Puppeteer, Faker, Silencer, Cannibal, The Fat Guy, Dog Owner, Terrorist, Binocular, Evil Engineer and Thief. [Role guide](ROLES.md).
 
-This repository contains the clean player source. Testing controls and debug role runners are excluded. Among Us and third-party dependency binaries are not included in source control. No player logs, credentials or personal configuration are included.
+## Downloads
 
-## Role guide
+Get matching installers from [the latest release](https://github.com/Oly132/among-us-custom-roles/releases/latest). Version 0.15.3 includes changes to role allocation, assignment sync, native intro timing, Cannibal/Thief buttons, name privacy and camera cleanup. These fixes still require live multiplayer confirmation.
 
-[Read the full role guide](ROLES.md) for abilities, teams, win conditions, limits and default settings. It covers all ten released custom roles and clearly marks Thief as upcoming.
+- **Windows Setup:** recommended normal installer, no testing UI. Install over the existing game folder with Among Us and Silencer CrewLink closed. Launch through Steam.
+- **Windows Testing Setup:** separate developer build with testing UI. Use a copied game folder; normal automatic updates are disabled.
+- **Steam Deck Experimental:** extract in Desktop Mode and run install.sh. Keep Steam launch options `WINEDLLOVERRIDES="winhttp=n,b" %command%`. Hardware/controller/voice validation remains pending.
+- **Android Beta:** supported Among Us 2026.9.29 ARM64 only. Install over Custom Roles Launcher, set the host's private HTTPS address using the launcher button, then launch Among Us through the launcher. Android startup and joining a PC lobby have been confirmed; full role interactions and outgoing voice silence remain unverified. Google Play account login is unsupported through the launcher.
 
-## Releases and updates
+Only Windows Testing contains testing controls. There is no iOS build. Obtain the current server address privately from the host; no private endpoint is published here.
 
-Download the Windows full installer from [GitHub Releases](https://github.com/Oly132/among-us-custom-roles/releases/latest). The Steam Deck package is experimental. Version 0.15.0 includes the automatic updater and the latest multiplayer/UI fixes.
+## Updating
 
-The mod checks the latest GitHub Release on each launch, including when custom roles are disabled. If a newer release has an `update-manifest.json` asset, the main menu asks whether to download it. Choosing Yes closes the game. Close Silencer CrewLink too. Launch through Steam after the update finishes. Choosing Not now postpones the update until the next launch.
+Windows checks published releases for update-manifest.json and offers an update. It downloads changed files by SHA-256 and preserves settings. Steam Deck updater execution remains experimental.
 
-Files are compared by SHA-256, so only changed or missing files download. Valid cached downloads are reused. Updates are staged and checked before installation. Failed installation restores previously replaced files. Personal role settings are preserved. BetterCrewLink updates apply only to the separate Silencer copy when installed, leaving ordinary BetterCrewLink alone. The current updater requires the bundled Windows Node runtime installed by the PC installer. Steam Deck updater support needs its runtime to be included and an on-device test before it is ready.
+Android checks the separate [android-v0.15.3 update channel](https://github.com/Oly132/among-us-custom-roles/releases/tag/android-v0.15.3) for android-update-manifest.json. Mod DLL updates require a restart; launcher changes require installing the new APK. Repository edits alone do not trigger updates.
 
-Uploading code or changing README does not notify players. Publishing a newer release with a valid manifest does. An installation made with an older installer needs the updater-enabled mod once before automatic updates are available.
+## Source and validation
 
-## Building
-
-Use .NET SDK 6 or newer and a legally owned supported game with BepInEx IL2CPP already installed and initialized. From this directory run:
+Use the exact Windows clean and Android corresponding-source archives attached to each release. The root main-branch source and GitHub automatic source archives may lag the packaged build. Build with .NET SDK and a legally owned supported game plus initialized BepInEx IL2CPP references:
 
 ```powershell
 dotnet build Forger.csproj -c Release -p:GameDir="C:/path/to/Among Us"
 ```
 
-The output DLL is `bin/Release/net6.0/Forger.dll`. Keep the game closed before replacing `BepInEx/plugins/Forger.dll`.
-
-## Publishing a release
-
-Build this clean source, update the plugin version, and prepare a payload folder containing only managed mod/dependency files. Run `prepare-release.py` with the payload, version, tag and output folder. Optionally supply the rebuilt Silencer CrewLink `resources/app.asar` with `--voice-asar`. Supply `--server-url` to merge a new HTTPS Impostor region address while preserving official regions and the player's selected region. This creates a manifest and one asset per unique changed-content hash. Upload all generated assets to the matching GitHub Release, make it the latest stable release, then publish it. The updater never installs prerelease/draft content through the latest stable URL.
-
-Do not publish game binaries, generated game interop assemblies, personal configuration, or developer testing builds. Release assets must come from the clean build and belong to this repository. The manifest pins the supported GameAssembly hash and restricts file destinations and download URLs.
-
+Builds, installer packaging, APK signatures and allocation tests have passed. Release notes distinguish those checks from live gameplay. Stale disconnected-player cards and complete death/ghost synchronization are not claimed fixed. No game APKs, signing keys, private player logs or personal server configuration are supplied.
