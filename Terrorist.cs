@@ -13,7 +13,7 @@ internal static class Terrorist
     internal static bool CanUse=>Mine && Game.Started && Game.Alive && Game.Local!.CanMove && !Game.Local.inVent && !MeetingHud.Instance && !Minigame.Instance && !RoleIntro.Visible && !Used;
     internal static void Configure()=>Chance=Plugin.Instance.Config.Bind("Terrorist","Assignment chance",0,new ConfigDescription("Chance for a Terrorist impostor.",new AcceptableValueRange<int>(0,100)));
     internal static void Reset(byte id=255){RoleId=id;Used=Won=Exploding=false;RegisteredRoles.Apply(id,Index);}
-    internal static PlayerControl[] Targets(PlayerControl source)=>PlayerControl.AllPlayerControls.ToArray().Where(p=>Puppeteer.Living(p)&&p.PlayerId!=source.PlayerId&&!p.inVent&&Vector2.Distance(source.GetTruePosition(),p.GetTruePosition())<=NormalGameOptionsV12.KillDistances[0]&&!Physics2D.Linecast(source.GetTruePosition(),p.GetTruePosition(),Constants.ShipAndObjectsMask).collider).ToArray();
+    internal static PlayerControl[] Targets(PlayerControl source)=>PlayerControl.AllPlayerControls.ToArray().Where(p=>Puppeteer.Living(p)&&p.PlayerId!=source.PlayerId&&!p.inVent&&Vector2.Distance(source.GetTruePosition(),p.GetTruePosition())<=NormalGameOptionsV12.KillDistances[0]&&!RolePhysics.Blocked(source.GetTruePosition(),p.GetTruePosition())).ToArray();
     internal static void Press(){if(!CanUse)return;if(Game.Host)Commit(Game.Local!);else Game.Send(236,w=>{w.Write((byte)1);w.Write(Game.Epoch);},AmongUsClient.Instance.HostId);}
     internal static bool Commit(PlayerControl source)
     {

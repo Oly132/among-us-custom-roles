@@ -45,7 +45,7 @@ internal static class Faker
             if(Vector2.Distance(pos,c.transform.position)>c.UsableDistance+.15f) continue;
             if(c.onlyFromBelow && pos.y>c.transform.position.y) continue;
             if(c.onlySameRoom && RoomLookup.Locate(p)!=Game.RoomName((byte)c.Room)) continue;
-            if(c.checkWalls && Physics2D.Linecast(pos,c.transform.position,Constants.ShipAndObjectsMask).collider) continue;
+            if(c.checkWalls && RolePhysics.Blocked(pos,c.transform.position)) continue;
             return c;
         }
         return null;
@@ -179,7 +179,7 @@ public sealed class FakerUI:MonoBehaviour
             if(RoleIntro.Visible || !hud || !Game.Started || !Faker.Mine || !Game.Alive || MeetingHud.Instance || Minigame.Instance || (MapBehaviour.Instance && MapBehaviour.Instance.IsOpen)) { if(button) button!.gameObject.SetActive(false);return; }
             if(!button)
             {
-                button=UnityEngine.Object.Instantiate(hud.AbilityButton,hud.AbilityButton.transform.parent);button.name="FakerFakeTask";button.enabled=false;
+                button=UnityEngine.Object.Instantiate(hud.AbilityButton,hud.transform);button.name="FakerFakeTask";button.enabled=false;
                 var click=button.GetComponent<PassiveButton>();click.OnClick=new UnityEngine.UI.Button.ButtonClickedEvent();click.OnClick.AddListener((UnityAction)Faker.Press);
                 var aspect=button.GetComponent<AspectPosition>();if(aspect) UnityEngine.Object.Destroy(aspect);
                 if(button.glyph) button.glyph.gameObject.SetActive(false);if(button.commsDown) button.commsDown.SetActive(false);

@@ -11,14 +11,23 @@ public sealed class AutoUpdateUI:MonoBehaviour
     string? manifest;
     string version="",message="";
     string previousStatus="";
-    bool checkedOnce,declined,starting;
+    bool checkedOnce,noticeRead,declined,starting;
     public AutoUpdateUI(IntPtr p):base(p){}
     void Update()
     {
+        if(!noticeRead)
+        {
+            var menu=UnityEngine.Object.FindObjectOfType<MainMenuManager>();
+            if(menu && menu.isActiveAndEnabled)
+            {
+                noticeRead=true;
+                try{previousStatus=UpdateNotice.Consume(Path.Combine(Paths.GameRootPath,"ForgerSetup","Updater","status.json"),typeof(Plugin).CustomAttributes.First(a=>a.AttributeType==typeof(BepInPlugin)).ConstructorArguments[2].Value!.ToString()!);}catch(Exception e){Plugin.Instance.Log.LogInfo("Update notice unavailable: "+e.Message);}
+            }
+        }
         if(checkedOnce)return;checkedOnce=true;
-        try{var status=Path.Combine(Paths.GameRootPath,"ForgerSetup","Updater","status.json");if(File.Exists(status)){using var json=JsonDocument.Parse(File.ReadAllText(status));previousStatus=json.RootElement.GetProperty("message").GetString()??"";}}catch{}
         _=Check();
     }
+    [Il2CppInterop.Runtime.Attributes.HideFromIl2Cpp]
     async Task Check()
     {
         try
@@ -48,6 +57,7 @@ public sealed class AutoUpdateUI:MonoBehaviour
         {
             if(previousStatus.Length>0)GUI.Box(new Rect(45,610,700,50),previousStatus);
             if((manifest==null && message.Length==0)||declined)return;
+            MenuInputGuard.Claim(new Rect(0,0,1280,720),true);
             GUI.Box(new Rect(365,230,550,210),"CUSTOM ROLES UPDATE");
             GUI.Label(new Rect(390,275,500,85),message.Length>0?message:$"Update {version} available. Download now?\nOnly changed files will download.\nAmong Us will close; close Silencer CrewLink too.");
             if(!starting && GUI.Button(new Rect(400,377,225,40),message.Length>0?"Retry":"Yes · update and close"))StartUpdate();

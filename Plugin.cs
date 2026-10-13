@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace Forger;
 
-[BepInPlugin("local.olivi.forger", "Forger", "0.15.0")]
+[BepInPlugin("local.olivi.forger", "Forger", "0.15.9")]
 public sealed class Plugin : BasePlugin
 {
     internal static Plugin Instance = null!;
@@ -17,7 +17,10 @@ public sealed class Plugin : BasePlugin
     public override void Load()
     {
         Instance = this;
-        ModMode.Configure();AddComponent<ModModeUI>();AddComponent<AutoUpdateUI>();
+        var menuHarmony=new Harmony("local.olivi.forger.menu-input");
+        menuHarmony.CreateClassProcessor(typeof(BlockNativeMouse)).Patch();
+        menuHarmony.CreateClassProcessor(typeof(BlockNativeController)).Patch();
+        ModMode.Configure();AddComponent<ModModeUI>();AddComponent<ServerAddressUI>();AddComponent<AutoUpdateUI>();
         if(!ModMode.Loaded){Log.LogInfo("Custom roles disabled. Gameplay patches were not loaded; vanilla mode active.");return;}
         Chance = Config.Bind("Forger", "Assignment chance", 100, new ConfigDescription("Chance to assign one Forger among the impostors.", new AcceptableValueRange<int>(0, 100)));
         Cooldown = Config.Bind("Forger", "Change evidence cooldown", 20f, new ConfigDescription("Seconds between successful changes.", new AcceptableValueRange<float>(0, 120)));
@@ -29,7 +32,7 @@ public sealed class Plugin : BasePlugin
         Silencer.Configure(); AddComponent<SilencerUI>(); Faker.Configure(); AddComponent<FakerUI>();
         Cannibal.Configure();FatGuy.Configure();AddComponent<CannibalUI>();
         DogOwner.Configure();AddComponent<DogOwnerUI>();
-        EvilEngineer.Configure();Terrorist.Configure();Binocular.Configure();AddComponent<ExtraRoleUI>();Puppeteer.Configure(); CustomRoles.Configure(); AddComponent<CustomRolesUI>();
+        EvilEngineer.Configure();Terrorist.Configure();Binocular.Configure();AddComponent<ExtraRoleUI>();Thief.Configure();AddComponent<ThiefUI>();Puppeteer.Configure(); CustomRoles.Configure(); AddComponent<CustomRolesUI>();
         AddComponent<PuppeteerUI>();
         Log.LogInfo("Forger loaded. All players require this mod. Host can edit four settings in the lobby.");
     }
@@ -75,6 +78,7 @@ internal static class Game
     internal static void QueueAssignment()
     {
         if (!Host) return;
+        MurderAuthority.Reset();
         Evidence.Reset(byte.MaxValue, Plugin.Uses.Value, Plugin.Cooldown.Value, Plugin.Window.Value);
         Assigned = false; AssignmentQueued = true; AssignAt = Time.time;
         RoundHasStarted=false;
@@ -93,6 +97,7 @@ internal static class Game
         RoundHasStarted=true;
         if (Host && !Assigned && !AssignmentQueued) QueueAssignment();
         TryAssign();
+        CustomRoles.RetryAssignment();
     }
     internal static void TryAssign()
     {
@@ -161,11 +166,11 @@ internal static class Game
 }
 
 [HarmonyPatch(typeof(RoleManager), nameof(RoleManager.SelectRoles))]
-internal static class AssignmentPatch { static void Prefix(RoleManager __instance) { RegisteredRoles.Ensure(__instance); } static void Postfix() { Game.QueueAssignment(); Game.TryAssign(); } }
+internal static class AssignmentPatch { static void Prefix(RoleManager __instance) { Thief.Reset();RegisteredRoles.Ensure(__instance); } static void Postfix() { Game.QueueAssignment(); Game.TryAssign(); } }
 [HarmonyPatch(typeof(HudManager), nameof(HudManager.Update))]
 internal static class UpdatePatch { static bool Prefix()=>Game.Local && Game.Local!.Data!=null; static void Postfix() { Game.Tick(); Cannibal.Tick(); DogOwner.Tick(); Puppeteer.Tick(); Faker.Tick(); Silencer.Tick(); } }
 [HarmonyPatch(typeof(PlayerControl), nameof(PlayerControl.HandleRpc))]
-internal static class RpcPatch { static bool Prefix(PlayerControl __instance, byte callId, MessageReader reader) => Terrorist.Rpc(__instance,callId,reader) && DogOwner.Rpc(__instance,callId,reader) && Cannibal.Rpc(__instance,callId,reader) && CustomRoles.Rpc(__instance, callId, reader) && Silencer.Rpc(__instance, callId, reader) && Faker.Rpc(__instance, callId, reader) && Puppeteer.Rpc(__instance, callId, reader) && Game.Rpc(__instance, callId, reader); }
+    internal static class RpcPatch { static bool Prefix(PlayerControl __instance, byte callId, MessageReader reader) => MurderAuthority.Rpc(__instance,callId,reader) && Thief.Rpc(__instance,callId,reader) && Terrorist.Rpc(__instance,callId,reader) && DogOwner.Rpc(__instance,callId,reader) && Cannibal.Rpc(__instance,callId,reader) && CustomRoles.Rpc(__instance, callId, reader) && Silencer.Rpc(__instance, callId, reader) && Faker.Rpc(__instance, callId, reader) && Puppeteer.Rpc(__instance, callId, reader) && Game.Rpc(__instance, callId, reader); }
 [HarmonyPatch(typeof(PlayerControl), nameof(PlayerControl.MurderPlayer))]
 internal static class KillPatch
 {
@@ -201,6 +206,7 @@ internal static class DetectiveCasePatch
         __result = Game.RoomName(room); return false;
     }
 }
+
 
 
 

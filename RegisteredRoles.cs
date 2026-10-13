@@ -41,11 +41,13 @@ internal static class RegisteredRoles
         if(added)Plugin.Instance.Log.LogInfo("Native custom role pool registered: "+string.Join(", ",CustomRoles.Roles.Select(r=>r.Name)));
     }
     internal static RoleTypes WireType(RoleTypes role)=>Get(role)?.Alignment==RoleAlignment.Impostor?RoleTypes.Impostor:RoleTypes.Crewmate;
-    internal static string Blurb(int i)=>i switch {0=>"Forge evidence. Mislead the Detective.",1=>"Control crewmates. Kill through them.",2=>"Fake a visual task. Fool the crew.",3=>"Silence the crew and their emergency calls.",4=>"Eat everyone. Win alone.",5=>"Survive one stabbing. Help the crew.",6=>"Unleash your dog. Find this round's victims.",7=>"Explode. Take everyone with you.",8=>"Watch the map. Find the truth.",_=>"Connect the vents. Hunt across the map."};
+    internal static string Blurb(int i)=>i switch {0=>"Forge evidence. Mislead the Detective.",1=>"Control crewmates. Kill through them.",2=>"Fake a visual task. Fool the crew.",3=>"Silence the crew and their emergency calls.",4=>"Eat everyone. Win alone.",5=>"Survive one stabbing. Help the crew.",6=>"Unleash your dog. Find this round's victims.",7=>"Explode. Take everyone with you.",8=>"Watch the map. Find the truth.",9=>"Connect the vents. Hunt across the map.",_=>"Steal a role. Take its abilities and team."};
     internal static void Apply(byte player,int index)
     {
         if(player==255 || !RoleManager.Instance)return;Ensure(RoleManager.Instance);
-        var p=Puppeteer.Find(player);if(p && p!.Data?.Role!=null && !p.Data.IsDead && !p.Data.Disconnected && p.Data.Role.Role!=(RoleTypes)(First+index))RoleManager.Instance.SetRole(p,(RoleTypes)(First+index));
+        var p=Puppeteer.Find(player);
+        try { if(p && p!.Data?.Role!=null && !p.Data.IsDead && !p.Data.Disconnected && p.Data.Role.Role!=(RoleTypes)(First+index))RoleManager.Instance.SetRole(p,(RoleTypes)(First+index)); }
+        catch(Exception error) { Plugin.Instance.Log.LogWarning("Registered role pending for player "+player+": "+error.Message); }
     }
 }
 [HarmonyPatch(typeof(RoleManager),nameof(RoleManager.Awake))]
@@ -109,7 +111,7 @@ internal static class RestoreRegisteredRoleData
 }
 
 [HarmonyPatch(typeof(RoleBehaviour),nameof(RoleBehaviour.TeamColor),MethodType.Getter)]
-internal static class CannibalNativeColor {static bool Prefix(RoleBehaviour __instance,ref Color __result){if(RegisteredRoles.Index(__instance.Role)!=Cannibal.Index)return true;__result=Cannibal.Color;return false;}}
+internal static class CannibalNativeColor {static bool Prefix(RoleBehaviour __instance,ref Color __result){if(RegisteredRoles.Get(__instance.Role)?.Alignment!=RoleAlignment.Neutral)return true;__result=Cannibal.Color;return false;}}
 
 
 

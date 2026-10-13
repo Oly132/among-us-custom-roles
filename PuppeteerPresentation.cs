@@ -52,7 +52,7 @@ internal static class PuppeteerButton
         { if (button) button!.gameObject.SetActive(false); return; }
         if (!button)
         {
-            button=UnityEngine.Object.Instantiate(hud.AbilityButton,hud.AbilityButton.transform.parent);
+            button=UnityEngine.Object.Instantiate(hud.AbilityButton,hud.transform);
             button.name="PuppeteerPossessReturn"; button.enabled=false;
             var click=button.GetComponent<PassiveButton>();
             click.OnClick=new UnityEngine.UI.Button.ButtonClickedEvent();
@@ -72,7 +72,11 @@ internal static class PuppeteerButton
             button.buttonLabelText.fontSize=hud.KillButton.buttonLabelText.fontSize;
         }
         button!.gameObject.SetActive(true);
-        button.transform.position=hud.KillButton.transform.position+hud.SabotageButton.transform.position-hud.UseButton.transform.position;
+        // Native HUD rearranges Kill into the bottom row while controlling a
+        // crewmate. Keep Return above that slot instead of subtracting Use again.
+        button.transform.position=Puppeteer.Active
+            ?new Vector3(hud.KillButton.transform.position.x,hud.ImpostorVentButton.transform.position.y,hud.KillButton.transform.position.z)
+            :hud.KillButton.transform.position+hud.SabotageButton.transform.position-hud.UseButton.transform.position;
         button.transform.localScale=hud.KillButton.transform.localScale;
         button.OverrideText(Puppeteer.Active ? "RETURN" : "POSSESS");
         var ready=Puppeteer.Active || Puppeteer.CanPossess;

@@ -12,6 +12,7 @@ internal static class Cannibal
     internal static int Epoch;
     internal static float ReadyAt;
     internal static bool Won;
+    internal static bool LocalWasCannibal,LocalWinner;
     internal static CachedPlayerData? Winner;
     internal static readonly HashSet<byte> Eaten=new();
     internal static readonly HashSet<byte> EatingAnimations=new();
@@ -25,13 +26,13 @@ internal static class Cannibal
         Chance=Plugin.Instance.Config.Bind("Cannibal","Assignment chance",0,new ConfigDescription("Chance for an independent Cannibal. Wins alone with at most one other survivor.",new AcceptableValueRange<int>(0,100)));
         Cooldown=Plugin.Instance.Config.Bind("Cannibal","Eat cooldown",30f,new ConfigDescription("Seconds between successful eats.",new AcceptableValueRange<float>(5,120)));
     }
-    internal static void Reset(byte id=255){CannibalUI.ClearTarget();RoleId=id;Epoch=Game.Epoch;ReadyAt=Time.time+10;Won=false;Winner=null;Eaten.Clear();EatingAnimations.Clear();HungerEvidence.Clear();RegisteredRoles.Apply(id,Index);}
+    internal static void Reset(byte id=255){CannibalUI.ClearTarget();RoleId=id;Epoch=Game.Epoch;ReadyAt=Time.time+10;Won=false;LocalWasCannibal=Mine;LocalWinner=false;Winner=null;Eaten.Clear();EatingAnimations.Clear();HungerEvidence.Clear();RegisteredRoles.Apply(id,Index);}
     internal static void Broadcast(byte op,Action<MessageWriter>? write=null)=>Game.Send(State,w=>{w.Write((byte)1);w.Write(Game.Epoch);w.Write(op);write?.Invoke(w);});
     internal static PlayerControl? Nearest(PlayerControl? source=null)
     {
         source??=Game.Local;if(!Puppeteer.Living(source))return null;
         var distance=NormalGameOptionsV12.KillDistances[Math.Clamp(GameOptionsManager.Instance.CurrentGameOptions.GetInt(Int32OptionNames.KillDistance),0,2)];
-        return PlayerControl.AllPlayerControls.ToArray().Where(p=>Puppeteer.Living(p) && p.PlayerId!=source!.PlayerId && !p.inVent && Vector2.Distance(source.GetTruePosition(),p.GetTruePosition())<=distance && !Physics2D.Linecast(source.GetTruePosition(),p.GetTruePosition(),Constants.ShipAndObjectsMask).collider).OrderBy(p=>Vector2.Distance(source!.GetTruePosition(),p.GetTruePosition())).ThenBy(p=>p.PlayerId).FirstOrDefault();
+        return PlayerControl.AllPlayerControls.ToArray().Where(p=>Puppeteer.Living(p) && p.PlayerId!=source!.PlayerId && !p.inVent && Vector2.Distance(source.GetTruePosition(),p.GetTruePosition())<=distance && !RolePhysics.Blocked(source.GetTruePosition(),p.GetTruePosition())).OrderBy(p=>Vector2.Distance(source!.GetTruePosition(),p.GetTruePosition())).ThenBy(p=>p.PlayerId).FirstOrDefault();
     }
     internal static bool CanEat=>Mine && Game.Started && Game.Alive && !Game.Local!.inVent && Game.Local.moveable && !MeetingHud.Instance && !Minigame.Instance && !RoleIntro.Visible && Time.time>=ReadyAt && Nearest();
     internal static void Eat()
@@ -67,11 +68,14 @@ internal static class Cannibal
     internal static bool MeetsWin=>Alive && LivingCount<=2;
     internal static void SetWin()
     {
-        Won=true;var p=Puppeteer.Find(RoleId);if(p && p!.Data!=null)Winner=new CachedPlayerData(p.Data);
+        // End-game cleanup destroys LocalPlayer before the winner screen is built.
+        // Keep the local result while player identities are still available.
+        Won=true;LocalWasCannibal=Mine;LocalWinner=Mine;var p=Puppeteer.Find(RoleId);if(p && p!.Data!=null)Winner=new CachedPlayerData(p.Data);
     }
     internal static void Tick()
     {
         if(!Game.Started)return;
+        LocalWasCannibal=Mine;
         foreach(var body in UnityEngine.Object.FindObjectsOfType<DeadBody>())
         {
             if(!Eaten.Contains(body.ParentId))continue;
@@ -123,7 +127,7 @@ internal static class CannibalNativeKillCleanup
 {
     static void Postfix(KillAnimation._CoPerformKill_d__2 __instance,bool __result){if(!__result)Complete(__instance);}
     static Exception? Finalizer(KillAnimation._CoPerformKill_d__2 __instance,Exception? __exception){if(__exception!=null)Complete(__instance);return __exception;}
-    static void Complete(KillAnimation._CoPerformKill_d__2 animation){if(animation.source&&animation.target&&animation.source.PlayerId==Cannibal.RoleId&&Cannibal.Eaten.Contains(animation.target.PlayerId))Cannibal.CompleteAnimation(animation.source,animation.target);}
+    static void Complete(KillAnimation._CoPerformKill_d__2 animation){if(animation.source&&animation.target&&Cannibal.Eaten.Contains(animation.target.PlayerId)&&Cannibal.EatingAnimations.Contains(animation.target.PlayerId))Cannibal.CompleteAnimation(animation.source,animation.target);}
 }
 [HarmonyPatch(typeof(GameManager),nameof(GameManager.RpcEndGame))]
 internal static class NeutralEndGate {static bool Prefix(GameOverReason endReason)=>!Cannibal.BlocksVanillaEnd(endReason);}
@@ -133,13 +137,7 @@ internal static class CannibalWinnerScreen
     static void Prefix()=>Cannibal.FilterWinners();
 }
 [HarmonyPatch(typeof(EndGameManager),nameof(EndGameManager.SetEverythingUp))]
-internal static class CannibalWinnerTint {static void Postfix(EndGameManager __instance){if(Cannibal.Won){__instance.BackgroundBar.material.color=Cannibal.Color;__instance.WinText.text=Cannibal.Mine?"Victory":"Defeat";__instance.WinText.color=Cannibal.Mine?Cannibal.Color:Palette.ImpostorRed;}else if(Cannibal.Mine){__instance.WinText.text="Defeat";__instance.WinText.color=Palette.ImpostorRed;}}}
-[HarmonyPatch(typeof(IntroCutscene),nameof(IntroCutscene.BeginCrewmate))]
-internal static class CannibalNativeIntro
-{
-    static void Prefix(ref Il2CppSystem.Collections.Generic.List<PlayerControl> teamToDisplay){if(!Cannibal.Mine)return;teamToDisplay=new();teamToDisplay.Add(Game.Local!);}
-    static void Postfix(IntroCutscene __instance){if(!Cannibal.Mine)return;__instance.TeamTitle.text="NEUTRAL";__instance.TeamTitle.color=Cannibal.Color;__instance.BackgroundBar.material.color=Cannibal.Color;__instance.ImpostorText.text="Eat everyone. Win alone.";}
-}
+internal static class CannibalWinnerTint {static void Postfix(EndGameManager __instance){if(Cannibal.Won){__instance.BackgroundBar.material.color=Cannibal.Color;__instance.WinText.text=Cannibal.LocalWinner?"Victory":"Defeat";__instance.WinText.color=Cannibal.LocalWinner?Cannibal.Color:Palette.ImpostorRed;}else if(Cannibal.LocalWasCannibal){__instance.WinText.text="Defeat";__instance.WinText.color=Palette.ImpostorRed;}}}
 
 
 

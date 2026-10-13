@@ -99,7 +99,7 @@ internal static class Puppeteer
         TargetId = 255; direction = Vector2.zero; ReadyAt = Time.time + Cooldown.Value;
         if (restoreMovement && Game.Alive && !MeetingHud.Instance) Game.Local!.moveable = true;
         if (Mine && Game.Local!.lightSource) Game.Local.lightSource.transform.SetParent(Game.Local.transform, false);
-        if (Game.Local && HudManager.InstanceExists) HudManager.Instance.PlayerCam.Target = Game.Local;
+        if (Game.Local && HudManager.InstanceExists){HudManager.Instance.PlayerCam.SetTarget(Game.Local!);HudManager.Instance.PlayerCam.Locked=false;}
         if (sync && Game.Host) Broadcast(2, w => w.Write(Cooldown.Value));
         Plugin.Instance.Log.LogInfo("PUPPETEER possession ended");
     }
@@ -141,7 +141,7 @@ internal static class Puppeteer
         var distance = NormalGameOptionsV12.KillDistances[Math.Clamp(range, 0, 2)];
         return Players().Where(p => Living(p) && p.PlayerId != TargetId && p.PlayerId != RoleId && !p.inVent && !p.Data.Role.IsImpostor)
             .Where(p => Vector2.Distance(pawn!.GetTruePosition(), p.GetTruePosition()) <= distance &&
-                !Physics2D.Linecast(pawn.GetTruePosition(), p.GetTruePosition(), Constants.ShipAndObjectsMask).collider)
+                !RolePhysics.Blocked(pawn.GetTruePosition(), p.GetTruePosition()))
             .OrderBy(p => Vector2.Distance(pawn!.GetTruePosition(), p.GetTruePosition())).FirstOrDefault();
     }
     internal static void Kill()

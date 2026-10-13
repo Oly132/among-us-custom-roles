@@ -1,8 +1,8 @@
 # Role guide
 
-This guide covers every custom role in this mod. **The matching 0.15.3 installers include all eleven roles below. New assignment/UI fixes still need live multiplayer confirmation.**
+This guide covers every custom role in this mod. Version 0.15.9 includes all eleven custom roles below.
 
-Every player needs the mod enabled and a compatible matching version. Download the installer from [Releases](https://github.com/Oly132/among-us-custom-roles/releases/latest). Steam Deck support is experimental; Android is available as a supported-build ARM64 beta; see release notes for limitations.
+Every player needs the mod enabled and a compatible matching version. Download the installer from [Releases](https://github.com/Oly132/among-us-custom-roles/releases/latest). Steam Deck and Android packages are available; see the release notes for platform requirements and testing limits.
 
 ## Roles at a glance
 
@@ -18,7 +18,7 @@ Every player needs the mod enabled and a compatible matching version. Download t
 | [Terrorist](#terrorist) | Impostor | Explode and kill nearby players | Impostor victory |
 | [Binocular](#binocular) | Crewmate | Use a movable binocular view from anywhere | Crewmate victory |
 | [Evil Engineer](#evil-engineer) | Impostor | Travel through a connected network of vents | Impostor victory |
-| [Thief](#thief) | Neutral initially | Steal another player's role once | Changes to the stolen role's win condition |
+| [Thief](#thief) | Neutral initially | Steal another player's role once | Changes to the stolen role's win condition; must steal to win |
 
 ## Choosing roles in the lobby
 
@@ -130,9 +130,9 @@ You retain normal impostor killing and sabotage abilities.
 
 ## Thief
 
-**Availability: included in the matching installers.**
+**Availability: local development version v0.15.1; not in the public v0.15.0 installer.**
 
-Start as a neutral with no team victory until you steal. Walk up to a living, visible player outside a vent and press **STEAL**. This can be used **once per game**, within normal kill targeting range and line of sight.
+Start as a neutral. Thief appears beside Cannibal in the purple **Neutral Roles** section, and its native reveal shows **Neutral** followed by **Thief**. Walk up to a living, visible player outside a vent and press **STEAL**. This can be used **once per game**, within normal kill targeting range and line of sight. You must steal a role to join a winning team; an uncommitted Thief does not share a crewmate victory.
 
 You receive their native or custom role, abilities and team. They become a plain crewmate. For example, if a Thief steals an impostor's role, the Thief becomes an impostor and the former impostor becomes a crewmate. Stealing Cannibal makes you an independent Cannibal. Stealing plain Crewmate consumes your use and makes you a plain crewmate.
 
@@ -151,6 +151,8 @@ These are native Among Us roles, not additional roles created by this mod.
 
 ## Release status
 
-This page describes the intended role rules implemented by the mod. Check [release notes](https://github.com/Oly132/among-us-custom-roles/releases/latest) for known issues and testing limitations. In particular, multiplayer death/ghost synchronization is still under investigation; the guide does not imply every interaction has been verified in a live multiplayer match.
+This page describes the intended role rules implemented by the mod. Check [release notes](https://github.com/Oly132/among-us-custom-roles/releases/latest) for known issues and testing limitations. Version 0.15.9 verifies several server-connected role and death-state paths; intermittent replay-lobby disconnection remains under investigation. This guide does not imply every map and interaction has been verified live.
 
 Updating this guide does not trigger an automatic game update. Players are notified when a newer stable release with an update manifest is published.
+
+

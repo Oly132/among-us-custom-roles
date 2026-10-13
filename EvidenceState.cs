@@ -35,5 +35,6 @@ public sealed class EvidenceState
         forged[(ForgerId, victim)] = room; Used++; ReadyAt = now + Cooldown; PendingVictim = null;
     }
     public void Meeting() => PendingVictim = null;
+    public void Transfer(byte newOwner) { ForgerId=newOwner;PendingVictim=null; }
     public bool TryGet(byte suspect, byte victim, out byte room) => forged.TryGetValue((suspect, victim), out room);
 }

@@ -25,6 +25,7 @@
     <EmbeddedResource Include="Assets/forge-stamp.png" />
     <EmbeddedResource Include="Assets/possess.png" />
     <EmbeddedResource Include="Assets/fake-task.png" /><EmbeddedResource Include="Assets/silence.png" />
+    <EmbeddedResource Include="Assets/steal.png" />
     <EmbeddedResource Include="Assets/apply-update.mjs" />
   </ItemGroup>
 </Project>

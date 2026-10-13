@@ -7,7 +7,9 @@ internal static class RoleIntro
     internal static IntroCutscene? View;
     static bool previewPending;
     static bool introHidHud;
-    internal static bool Visible=>previewPending || (View && View!.gameObject.activeInHierarchy) || CannibalUI.EatingVisible;
+    // A role transfer blocks custom input for one frame so the STEAL key cannot
+    // immediately activate the newly acquired role's F ability.
+    internal static bool Visible=>previewPending || (View && View!.gameObject.activeInHierarchy) || CannibalUI.EatingVisible || Thief.Transitioning;
     static Camera? backdropCamera;
     static int oldMask;
     static CameraClearFlags oldFlags;
@@ -36,11 +38,14 @@ internal static class RoleIntro
     }
     internal static void Refresh()
     {
+        if(View)NeutralIntro.Apply(View!);
         if(previewPending || (View && View!.gameObject.activeInHierarchy))
         {
             if(HudManager.Instance){HudManager.Instance.SetHudActive(false);introHidHud=true;}
             return;
         }
+        // Interrupted native intros must release only the camera state we own.
+        if(backdropCamera)EndBackdrop();
         RestoreHud();
     }
     internal static void RestoreHud()

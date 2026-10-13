@@ -26,6 +26,7 @@ internal static class Silencer
     }
     internal static bool ShowReleased=>Time.time<releasedNoticeUntil;
     static readonly string BridgePath=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"Forger","silencer.json");
+    static readonly string BridgeTemporaryPath=BridgePath+"."+Environment.ProcessId+".tmp";
     internal static bool Mine => Game.Local && Game.Local!.PlayerId==RoleId;
     internal static bool Muted(byte id) => Game.Started && Puppeteer.Living(Puppeteer.Find(id)) && Effect.Targets.TryGetValue(id,out var silence) && Time.time<silence.release;
     internal static void Configure()
@@ -44,7 +45,7 @@ internal static class Silencer
         {
             if(!Puppeteer.Living(p) || p.PlayerId==RoleId || p.Data.Role.IsImpostor || p.inVent || Effect.PreviouslySilenced.Contains(p.PlayerId)) continue;
             var d=Vector2.Distance(Game.Local.GetTruePosition(),p.GetTruePosition());
-            if(d>distance || Physics2D.Linecast(Game.Local.GetTruePosition(),p.GetTruePosition(),Constants.ShipAndObjectsMask).collider) continue;
+            if(d>distance || RolePhysics.Blocked(Game.Local.GetTruePosition(),p.GetTruePosition())) continue;
             closest=p;distance=d;
         }
         return closest;
@@ -59,7 +60,7 @@ internal static class Silencer
     {
         var p=Puppeteer.Find(id);
         if(!Game.Host || !Game.Started || sender.PlayerId!=RoleId || !Puppeteer.Living(sender) || !sender.Data.Role.IsImpostor || sender.inVent || MeetingHud.Instance || !Puppeteer.Living(p) || p!.Data.Role.IsImpostor || p.inVent || Effect.PreviouslySilenced.Contains(id) || Used>=Uses.Value || Time.time<ReadyAt) return;
-        if(Vector2.Distance(sender.GetTruePosition(),p.GetTruePosition())>1.8f || Physics2D.Linecast(sender.GetTruePosition(),p.GetTruePosition(),Constants.ShipAndObjectsMask).collider) return;
+        if(Vector2.Distance(sender.GetTruePosition(),p.GetTruePosition())>1.8f || RolePhysics.Blocked(sender.GetTruePosition(),p.GetTruePosition())) return;
         if(!Effect.Add(id)) return;Used++;ReadyAt=Time.time+Cooldown.Value;
         Send(1,w=>{w.Write(id);w.Write(Used);w.Write(Cooldown.Value);});
         WriteBridge(Game.Local && Muted(Game.Local!.PlayerId));
@@ -98,7 +99,7 @@ internal static class Silencer
         {
             Directory.CreateDirectory(Path.GetDirectoryName(BridgePath)!);
             var json=$"{{\"version\":1,\"pid\":{Environment.ProcessId},\"updated\":{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()},\"muted\":{(mute?"true":"false")}}}";
-            File.WriteAllText(BridgePath+".tmp",json);File.Move(BridgePath+".tmp",BridgePath,true);
+            File.WriteAllText(BridgeTemporaryPath,json);File.Move(BridgeTemporaryPath,BridgePath,true);
         }
         catch(Exception e) { Plugin.Instance.Log.LogWarning("Silencer voice bridge: "+e.Message); }
     }
@@ -166,8 +167,9 @@ public sealed class SilencerUI:MonoBehaviour
         var old=GUI.matrix;var scale=Mathf.Min(Screen.width/1280f,Screen.height/720f);GUI.matrix=Matrix4x4.TRS(Vector3.zero,Quaternion.identity,new Vector3(scale,scale,1));
         try
         {
-            if(Game.Local && Silencer.Muted(Game.Local!.PlayerId)) GUI.Box(new Rect(450,70,380,55),"SILENCED · chat and voice blocked\n"+Silencer.Status(Game.Local.PlayerId));
-            else if(Game.Alive && Silencer.ShowReleased)GUI.Box(new Rect(450,70,380,55),"SILENCE ENDED · 0s\nChat, voice and emergency meetings restored");
+            var banner=new Rect(400,MeetingHud.Instance?590:70,480,55);
+            if(Game.Local && Silencer.Muted(Game.Local!.PlayerId)) GUI.Box(banner,"SILENCED · chat and voice blocked\n"+Silencer.Status(Game.Local.PlayerId));
+            else if(Game.Alive && Silencer.ShowReleased)GUI.Box(banner,"SILENCE ENDED · 0s\nChat, voice and emergency meetings restored");
             
         }
         finally { GUI.matrix=old; }

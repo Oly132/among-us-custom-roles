@@ -24,7 +24,7 @@ public sealed class CannibalUI:MonoBehaviour
     internal static void ShowEating(string message="BEING EATEN")
     {
         if(eatingCard)UnityEngine.Object.Destroy(eatingCard);
-        var hud=HudManager.Instance;if(!hud)return;
+        var hud=HudManager.Instance;if(hud)NativeHudPlacement.Prepare(hud);if(!hud)return;
         hud.SetHudActive(false);
         foreach(var obj in new[]{hud.TaskStuff,hud.SettingsButton,hud.MapButton?hud.MapButton.gameObject:null,hud.MatchInfoButton?hud.MatchInfoButton.gameObject:null,hud.TaskPanel?hud.TaskPanel.gameObject:null})
             if(obj && obj!.activeSelf){hiddenHud.Add(obj);obj.SetActive(false);}
@@ -40,12 +40,12 @@ public sealed class CannibalUI:MonoBehaviour
         if(eatingCard && Time.time>=cardEnds){UnityEngine.Object.Destroy(eatingCard);eatingCard=null;foreach(var obj in hiddenHud)if(obj)obj.SetActive(true);hiddenHud.Clear();if(Game.Local && HudManager.Instance)HudManager.Instance.SetHudActive(Game.Local,Game.Local!.Data.Role,true);}
         try
         {
-            var hud=HudManager.Instance;
+            var hud=HudManager.Instance;if(hud)NativeHudPlacement.Prepare(hud);
             if(!hud || !Cannibal.Mine || !Game.Started || !Game.Alive || RoleIntro.Visible || MeetingHud.Instance || Minigame.Instance || ExileController.Instance || (MapBehaviour.Instance && MapBehaviour.Instance.IsOpen)) {ClearTarget();if(button)button!.gameObject.SetActive(false);return;}
             hud.KillButton.gameObject.SetActive(false);hud.SabotageButton.gameObject.SetActive(false);hud.ImpostorVentButton.gameObject.SetActive(false);
             if(!button)
             {
-                button=UnityEngine.Object.Instantiate(hud.AbilityButton,hud.AbilityButton.transform.parent);button.name="CannibalEat";button.enabled=false;
+                button=UnityEngine.Object.Instantiate(hud.AbilityButton,hud.transform);button.name="CannibalEat";button.enabled=false;
                 var passive=button.GetComponent<PassiveButton>();passive.OnClick=new UnityEngine.UI.Button.ButtonClickedEvent();passive.OnClick.AddListener((UnityAction)(()=>Cannibal.Eat()));
                 var aspect=button.GetComponent<AspectPosition>();if(aspect)UnityEngine.Object.Destroy(aspect);
                 if(button.glyph)button.glyph.gameObject.SetActive(false);if(button.commsDown)button.commsDown.SetActive(false);
@@ -57,7 +57,7 @@ public sealed class CannibalUI:MonoBehaviour
                 }
                 button.graphic.sprite=icon;button.buttonLabelText.fontSize=hud.KillButton.buttonLabelText.fontSize;
             }
-            button!.gameObject.SetActive(true);button.transform.position=hud.KillButton.transform.position;button.transform.localScale=hud.KillButton.transform.localScale;button.OverrideText("EAT");
+            button!.gameObject.SetActive(true);NativeHudPlacement.ShowGraphic(button);button.transform.position=hud.KillButton.transform.position;button.transform.localScale=hud.KillButton.transform.localScale;button.OverrideText("EAT");
             var ready=Cannibal.CanEat;if(ready)button.SetEnabled();else button.SetDisabled();button.SetInfiniteUses();
             RefreshTarget();
             var remaining=Math.Max(0,Cannibal.ReadyAt-Time.time);button.SetCooldownFill(Mathf.Clamp01(remaining/Cannibal.Cooldown.Value));button.cooldownTimerText.gameObject.SetActive(remaining>0);button.cooldownTimerText.text=Math.Ceiling(remaining).ToString();button.graphic.color=ready?Color.white:new Color(.5f,.5f,.5f,.65f);

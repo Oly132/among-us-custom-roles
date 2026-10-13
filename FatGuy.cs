@@ -13,11 +13,13 @@ internal static class FatGuy
     internal static void Reset(byte id=255){RoleId=id;StabbingSpent=false;RegisteredRoles.Apply(id,Index);}
     internal static bool Is(PlayerControl? p)=>p && p!.PlayerId==RoleId;
     internal static bool EligibleStab(PlayerControl attacker,PlayerControl target)=>!Terrorist.Exploding && Is(target) && !StabbingSpent && Puppeteer.Living(target) && attacker && attacker.Data?.Role!=null && attacker.Data.Role.IsImpostor && attacker.Data.Role.Role!=RoleTypes.Viper;
-    internal static bool TryAbsorb(PlayerControl attacker,PlayerControl target)
+    internal static bool TryAbsorb(PlayerControl attacker,PlayerControl target,bool notify=true)
     {
-        if(!Game.Host || !Game.Started || !EligibleStab(attacker,target))return false;
+        if(!Game.Host || !Game.Started || !StabbingProtection.TryConsume(ref StabbingSpent,EligibleStab(attacker,target)))return false;
         ApplyAbsorb(attacker.PlayerId);
-        Cannibal.Broadcast(2,w=>{w.Write(attacker.PlayerId);w.Write(target.PlayerId);});
+        // Native murder RPCs are consumed independently on every client.
+        // Host-only synthetic attacks (Puppeteer) notify the other clients.
+        if(notify && Game.Host)Cannibal.Broadcast(2,w=>{w.Write(attacker.PlayerId);w.Write(target.PlayerId);});
         Plugin.Instance.Log.LogInfo($"FAT GUY first stabbing absorbed: attacker={attacker.PlayerId}, target={target.PlayerId}");return true;
     }
     internal static void ApplyAbsorb(byte attacker)
@@ -32,15 +34,24 @@ internal static class FatGuy
         if(Is(victim) && killer.Data.Role.Role==RoleTypes.Viper)HungerEvidence.Add(victim.PlayerId,255,victim.GetTruePosition(),true,false);
     }
 }
+[HarmonyPatch(typeof(PlayerControl),nameof(PlayerControl.CmdCheckMurder))]
+internal static class FatNativeMurderCommand
+{
+    // Impostor can resolve CheckMurder itself. Decide protection before that
+    // request leaves the attacker, rather than waiting for its murder reply.
+    static bool Prefix(PlayerControl __instance,PlayerControl target)=>MurderAuthority.BeforeRpc(__instance,target,true);
+}
 [HarmonyPatch(typeof(PlayerControl),nameof(PlayerControl.RpcMurderPlayer))]
 internal static class FatNativeMurderRpc
 {
-    static bool Prefix(PlayerControl __instance,PlayerControl target,bool didSucceed)=>!didSucceed || !FatGuy.TryAbsorb(__instance,target);
+    static bool Prefix(PlayerControl __instance,PlayerControl target,bool didSucceed)=>MurderAuthority.BeforeRpc(__instance,target,didSucceed);
 }
 [HarmonyPatch(typeof(PlayerControl),nameof(PlayerControl.MurderPlayer))]
 internal static class FatNativeMurder
 {
-    static bool Prefix(PlayerControl __instance,PlayerControl target,MurderResultFlags resultFlags)=>((resultFlags&MurderResultFlags.Succeeded)==0) || !FatGuy.TryAbsorb(__instance,target);
+    // Real games decide protection before a successful murder is broadcast.
+    // Direct MurderPlayer remains useful in the offline integration sandbox.
+    static bool Prefix(PlayerControl __instance,PlayerControl target,MurderResultFlags resultFlags)=>!TutorialManager.InstanceExists || ((resultFlags&MurderResultFlags.Succeeded)==0) || !FatGuy.TryAbsorb(__instance,target,false);
     static void Postfix(PlayerControl __instance,PlayerControl target){if(target && target.Data.IsDead)FatGuy.OnDeath(__instance,target);}
 }
 [HarmonyPatch(typeof(ViperDeadBody),nameof(ViperDeadBody.FixedUpdate))]

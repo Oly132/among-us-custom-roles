@@ -10,6 +10,7 @@ internal static class ModMode
 public sealed class ModModeUI:MonoBehaviour
 {
     public ModModeUI(IntPtr p):base(p){}
+    static readonly string VersionLabel="Custom Roles v"+typeof(Plugin).CustomAttributes.First(a=>a.AttributeType==typeof(BepInEx.BepInPlugin)).ConstructorArguments[2].Value;
     void OnGUI()
     {
         if(Game.Started || Game.Local || RoleIntro.Visible || Minigame.Instance ||
@@ -20,6 +21,13 @@ public sealed class ModModeUI:MonoBehaviour
         GUI.matrix=Matrix4x4.TRS(Vector3.zero,Quaternion.identity,new Vector3(scale,scale,1));
         try
         {
+            var versionStyle=new GUIStyle(GUI.skin.label){fontSize=14,alignment=TextAnchor.LowerRight};
+            var versionRect=new Rect(Screen.width/scale-310,Screen.height/scale-27,295,20);
+            versionStyle.normal.textColor=new Color(0,0,0,.8f);
+            GUI.Label(new Rect(versionRect.x+1,versionRect.y+1,versionRect.width,versionRect.height),VersionLabel,versionStyle);
+            versionStyle.normal.textColor=new Color(1,1,1,.8f);
+            GUI.Label(versionRect,VersionLabel,versionStyle);
+            MenuInputGuard.Claim(new Rect(815,650,350,40));
             if(GUI.Button(new Rect(815,650,350,40),"Custom roles: "+(ModMode.Enabled.Value?"ON":"OFF")+"  |  click to toggle"))
             {ModMode.Enabled.Value=!ModMode.Enabled.Value;Plugin.Instance.Config.Save();}
             if(ModMode.Enabled.Value!=ModMode.Loaded)GUI.Box(new Rect(815,601,350,43),"Restart Among Us to apply\n"+(ModMode.Enabled.Value?"Custom roles enabled":"Vanilla mode enabled"));

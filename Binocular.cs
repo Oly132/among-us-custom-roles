@@ -10,13 +10,14 @@ internal static class Binocular
     internal static ConfigEntry<int> Chance=null!;
     internal static ConfigEntry<float> Duration=null!,Cooldown=null!;
     internal static float ReadyAt,EndsAt;
+    static int closedFrame=-1;
     static AsyncOperationHandle<GameObject> asset=null!;
     static bool loading;
     static GameObject? prefabAsset;
     internal static FungleSurveillanceMinigame? View;
     static TMPro.TextMeshPro? timer;
     internal static bool Mine=>Game.Local&&Game.Local!.PlayerId==RoleId;
-    internal static bool CanUse=>Mine&&Game.Started&&Game.Alive&&Game.Local!.CanMove&&!Game.Local.inVent&&!MeetingHud.Instance&&!Minigame.Instance&&!RoleIntro.Visible&&Time.time>=ReadyAt;
+    internal static bool CanUse=>Mine&&Game.Started&&Game.Alive&&Game.Local!.CanMove&&!Game.Local.inVent&&!MeetingHud.Instance&&!Minigame.Instance&&!ExileController.Instance&&!RoleIntro.Visible&&!(MapBehaviour.Instance&&MapBehaviour.Instance.IsOpen)&&Time.time>=ReadyAt&&Time.frameCount!=closedFrame;
     internal static void Configure()
     {
         Chance=Plugin.Instance.Config.Bind("Binocular","Assignment chance",0,new ConfigDescription("Chance for a Binocular crewmate.",new AcceptableValueRange<int>(0,100)));
@@ -55,17 +56,17 @@ internal static class Binocular
             View.securityCamera.cam.cullingMask &= ~(1<<View.gameObject.layer);
             Plugin.Instance.Log.LogInfo("BINOCULAR camera position="+View.securityCamera.cam.transform.position+", layer="+View.gameObject.layer+", mask="+View.securityCamera.cam.cullingMask);
             EndsAt=Time.time+Duration.Value;
-            timer=UnityEngine.Object.Instantiate(HudManager.Instance.KillButton.cooldownTimerText,View.transform);timer.transform.localPosition=new Vector3(0,-2.5f,-3);timer.transform.localScale=Vector3.one;timer.gameObject.SetActive(true);timer.fontSize=2.4f;timer.alignment=TMPro.TextAlignmentOptions.Center;timer.text="10s";
+            timer=UnityEngine.Object.Instantiate(HudManager.Instance.KillButton.cooldownTimerText,View.transform);timer.transform.localPosition=new Vector3(0,-2.5f,-3);timer.transform.localScale=Vector3.one;timer.gameObject.SetActive(true);timer.fontSize=2.4f;timer.alignment=TMPro.TextAlignmentOptions.Center;timer.text=Math.Ceiling(Duration.Value)+"s";
             Plugin.Instance.Log.LogInfo("BINOCULAR opened native Fungle view on "+ShipStatus.Instance.name);
         }
         catch(Exception e){Close();Plugin.Instance.Log.LogError("Binocular view: "+e);Game.Notify("Binoculars could not open.");}
     }
-    internal static void Close(){if(View){View!.Close();View=null;ReadyAt=Time.time+Cooldown.Value;}}
-    internal static void Closed(FungleSurveillanceMinigame view){if(View&&View!.Pointer==view.Pointer){View=null;timer=null;ReadyAt=Time.time+Cooldown.Value;Plugin.Instance.Log.LogInfo("BINOCULAR closed; cooldown="+Cooldown.Value);}}
+    internal static void Close(){if(View){View!.Close();View=null;timer=null;closedFrame=Time.frameCount;ReadyAt=Time.time+Cooldown.Value;}}
+    internal static void Closed(FungleSurveillanceMinigame view){if(View&&View!.Pointer==view.Pointer){View=null;timer=null;closedFrame=Time.frameCount;ReadyAt=Time.time+Cooldown.Value;Plugin.Instance.Log.LogInfo("BINOCULAR closed; cooldown="+Cooldown.Value);}}
     internal static void Tick()
     {
         if(Mine&&Game.Started)Prepare();
-        if(View){if(timer)timer!.text=Math.Ceiling(Math.Max(0,EndsAt-Time.time))+"s";if(!View!.gameObject.activeInHierarchy){View=null;ReadyAt=Time.time+Cooldown.Value;}else if(!Mine||!Game.Started||!Game.Alive||MeetingHud.Instance||Time.time>=EndsAt||Input.GetKeyDown(KeyCode.F))Close();}
+        if(View){if(timer)timer!.text=Math.Ceiling(Math.Max(0,EndsAt-Time.time))+"s";if(!View!.gameObject.activeInHierarchy){View=null;timer=null;closedFrame=Time.frameCount;ReadyAt=Time.time+Cooldown.Value;}else if(!Mine||!Game.Started||!Game.Alive||MeetingHud.Instance||ExileController.Instance||Time.time>=EndsAt||Input.GetKeyDown(KeyCode.F))Close();}
     }
 }
 [HarmonyPatch(typeof(FungleSurveillanceMinigame),nameof(FungleSurveillanceMinigame.Close))]

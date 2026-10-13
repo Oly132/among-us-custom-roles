@@ -22,6 +22,7 @@ internal static class NativeRoles
         if(role.Icon=="native:scientist")return RoleManager.Instance.GetRole(RoleTypes.Scientist).RoleIconWhite;
         if(role.Icon=="native:engineer")return RoleManager.Instance.GetRole(RoleTypes.Engineer).RoleIconWhite;
         if(role.Icon=="native:guardian")return RoleManager.Instance.GetRole(RoleTypes.GuardianAngel).RoleIconWhite;
+        if(role.Icon=="native:thief")return RoleManager.Instance.GetRole(RoleTypes.Shapeshifter).RoleIconWhite;
         using var s=typeof(Plugin).Assembly.GetManifestResourceStream("Forger.Assets."+role.Icon)!;using var b=new MemoryStream();s.CopyTo(b);
         var texture=new Texture2D(2,2,TextureFormat.RGBA32,false);ImageConversion.LoadImage(texture,b.ToArray(),false);texture.filterMode=FilterMode.Point;
         return icons[role.Name]=Sprite.Create(texture,new Rect(0,0,texture.width,texture.height),new Vector2(.5f,.5f),texture.width);
@@ -39,6 +40,19 @@ internal static class NativeRoles
     internal static void Quota(RolesSettingsMenu m)
     {
         menu=m;rows.Clear();quota.Clear();numbers.Clear();
+        var seen=new Dictionary<RoleTypes,IntPtr>();
+        for(int i=0;i<m.roleChances.Count;)
+        {
+            var row=m.roleChances[i];
+            if(!row || !row.role){m.roleChances.RemoveAt(i);continue;}
+            if(seen.TryGetValue(row.role.Role,out var pointer))
+            {
+                m.roleChances.RemoveAt(i);
+                if(pointer!=row.Pointer){row.gameObject.SetActive(false);UnityEngine.Object.Destroy(row.gameObject);}
+                continue;
+            }
+            seen.Add(row.role.Role,row.Pointer);i++;
+        }
         foreach(var row in m.roleChances)
         {
             if(!row || !row.role)continue;var role=RegisteredRoles.Get(row.role.Role);if(role==null)continue;
@@ -47,7 +61,7 @@ internal static class NativeRoles
             Click(row.CountMinusBtn,()=>{role.Count.Value=0;CustomRoles.Changed();});Click(row.CountPlusBtn,()=>{role.Count.Value=1;CustomRoles.Changed();});
             Click(row.ChanceMinusBtn,()=>{role.Chance.Value=Math.Max(0,role.Chance.Value-10);CustomRoles.Changed();});Click(row.ChancePlusBtn,()=>{role.Chance.Value=Math.Min(100,role.Chance.Value+10);CustomRoles.Changed();});
         }
-        foreach(var label in m.RoleChancesSettings.GetComponentsInChildren<TMPro.TextMeshPro>(true))if(label.text=="Crewmate Roles")Text(label,"Crew / Neutral Roles");
+        NeutralRoleSections.Arrange(m);
         Refresh();
     }
     internal static void Open(RolesSettingsMenu m,CustomRole role,PassiveButton tab)
@@ -111,6 +125,7 @@ internal static class NativeRoles
         var bottom=renders.Where(r=>r).Min(r=>r.bounds.min.y);var scroll=menu.scrollBar;
         var required=scroll.Inner.localPosition.y+(menu.MaskArea.bounds.min.y+.1f-bottom)/Math.Abs(scroll.Inner.lossyScale.y);
         scroll.SetYBoundsMax(Math.Max(0,required));scroll.UpdateScrollBars();
+        scroll.active=true;scroll.allowY=true;
     }
     
     
@@ -135,8 +150,8 @@ internal static class CustomRoleRefreshPatch {static bool Prefix(RoleOptionSetti
 public sealed class CustomRolesUI:MonoBehaviour
 {
     public CustomRolesUI(IntPtr p):base(p){}
-    void LateUpdate(){RoleIntro.Refresh();RoleNamePrivacy.Refresh();}
-    void Update(){CustomRoles.Sync();NativeRoles.Layout();RoleIntro.Refresh();}
+    void LateUpdate(){CustomRoles.RestoreAssignedRoles();RoleTaskHints.Refresh();RoleIntro.Refresh();RoleNamePrivacy.Refresh();DisconnectCleanup.Refresh();}
+    void Update(){CustomRoles.RequestAssignment();CustomRoles.Sync();NativeRoles.Layout();RoleIntro.Refresh();}
 }
 [HarmonyPatch(typeof(RolesSettingsMenu),nameof(RolesSettingsMenu.OpenMenu))]
 internal static class CustomRoleOpenPatch {static void Postfix(RolesSettingsMenu __instance){try{NativeRoles.Tabs(__instance);}catch(Exception e){Plugin.Instance.Log.LogError("Custom tabs open: "+e);}}}

@@ -20,7 +20,7 @@ internal static class EvidenceButton
         { Hide(); return; }
         if (!button)
         {
-            button = UnityEngine.Object.Instantiate(hud.AbilityButton, hud.AbilityButton.transform.parent);
+            button = UnityEngine.Object.Instantiate(hud.AbilityButton, hud.transform);
             button.gameObject.name = "ForgerChangeEvidence";
             button.enabled = false; // The clone must not invoke the base impostor ability.
             var passive = button.GetComponent<PassiveButton>();

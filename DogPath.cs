@@ -2,7 +2,7 @@ using UnityEngine;
 namespace Forger;
 internal static class DogPath
 {
-    static bool Clear(Vector2 a,Vector2 b)=>!Physics2D.Linecast(a,b,Constants.ShipAndObjectsMask).collider;
+    static bool Clear(Vector2 a,Vector2 b)=>!RolePhysics.Blocked(a,b);
     internal static Vector2[] Find(Vector2 start,Vector2 end)
     {
         if(Clear(start,end))return new[]{start,end};
@@ -19,7 +19,7 @@ internal static class DogPath
             for(int x=-1;x<=1;x++)for(int y=-1;y<=1;y++)
             {
                 if(x==0&&y==0)continue;var next=(x:current.x+x,y:current.y+y);if(Math.Abs(next.x)>limit||Math.Abs(next.y)>limit)continue;
-                var nextPosition=Point(next);if(Physics2D.OverlapCircle(nextPosition,.12f,Constants.ShipAndObjectsMask) || !Clear(position,nextPosition))continue;
+                var nextPosition=Point(next);if(RolePhysics.Occupied(nextPosition,.12f) || !Clear(position,nextPosition))continue;
                 var g=cost[current]+(x!=0&&y!=0?.7071f:.5f);if(cost.TryGetValue(next,out var old)&&old<=g)continue;
                 cost[next]=g;previous[next]=current;open.Enqueue(next,g+Vector2.Distance(nextPosition,end));
             }
