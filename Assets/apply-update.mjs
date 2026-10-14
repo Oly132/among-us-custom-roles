@@ -58,27 +58,32 @@ export function applyFiles(files,roots,cache,backup){
 }
 export async function stageFiles(files,cache,fetcher=fetch,status=()=>{}){
  fs.mkdirSync(cache,{recursive:true});
+ const totalBytes=files.reduce((sum,file)=>sum+file.size,0);let downloadedBytes=0,lastReport=0;
+ const report=(message,force=false)=>{if(force||Date.now()-lastReport>=200){lastReport=Date.now();status(message,{phase:'downloading',downloadedBytes,totalBytes});}};
  for(let i=0;i<files.length;i++){
-  const file=files[i],dest=path.join(cache,file.sha256);status(`Downloading changed file ${i+1}/${files.length}`);
-  if(fs.existsSync(dest)&&digest(dest)===file.sha256&&fs.statSync(dest).size===file.size)continue;
-  const partial=dest+'.part';const response=await fetcher(file.url,{signal:AbortSignal.timeout(300000)});
+  const file=files[i],dest=path.join(cache,file.sha256);report(`Downloading changed file ${i+1}/${files.length}`,true);
+  if(fs.existsSync(dest)&&digest(dest)===file.sha256&&fs.statSync(dest).size===file.size){downloadedBytes+=file.size;report('Using a verified cached file',true);continue;}
+  const partial=dest+'.part';const response=await fetcher(file.url,{signal:AbortSignal.timeout(30*60*1000)});
   if(!response.ok)throw Error(`Download failed (${response.status})`);
-  let count=0;await pipeline(Readable.fromWeb(response.body),async function*(source){for await(const chunk of source){count+=chunk.length;if(count>file.size)throw Error('Download larger than manifest');yield chunk;}},fs.createWriteStream(partial));
+  let count=0;await pipeline(Readable.fromWeb(response.body),async function*(source){for await(const chunk of source){count+=chunk.length;if(count>file.size)throw Error('Download larger than manifest');downloadedBytes+=chunk.length;report(`Downloading changed file ${i+1}/${files.length}`);yield chunk;}},fs.createWriteStream(partial));
   if(count!==file.size||digest(partial)!==file.sha256)throw Error('Download checksum failed');fs.renameSync(partial,dest);
+  report(`Verified file ${i+1}/${files.length}`,true);
  }
 }
 async function main(){
  const [, , , game,pidText,plan]=process.argv;
  const root=fs.realpathSync(game),folder=path.join(root,'ForgerSetup','Updater');fs.mkdirSync(folder,{recursive:true});
- const status=message=>fs.writeFileSync(path.join(folder,'status.json'),JSON.stringify({message,updated:Date.now()}));
+ let updateVersion='';
+ const status=(message,progress={})=>{const target=path.join(folder,'status.json'),temporary=target+'.new';fs.writeFileSync(temporary,JSON.stringify({message,updated:Date.now(),version:updateVersion,...progress}));fs.renameSync(temporary,target);};
  try{
   const manifest=validate(JSON.parse(fs.readFileSync(plan,'utf8')));
+  updateVersion=manifest.version;
   if(digest(path.join(root,'GameAssembly.dll'))!==gameHash)throw Error('Among Us version is unsupported; no files changed');
   const roots={game:root,voice:process.env.LOCALAPPDATA?path.join(process.env.LOCALAPPDATA,'Programs','SilencerCrewLink'):null};
   const files=changedFiles(manifest,roots),cache=path.join(folder,'cache');fs.mkdirSync(cache,{recursive:true});
   await stageFiles(files,cache,fetch,status);
   const pid=Number(pidText);if(!Number.isInteger(pid)||pid<1)throw Error('Invalid game process');
-  status('Downloaded. Waiting for Among Us to close.');
+  status('Download complete and verified. Close Among Us to install.',{phase:'downloaded',downloadedBytes:files.reduce((sum,file)=>sum+file.size,0),totalBytes:files.reduce((sum,file)=>sum+file.size,0)});
   const deadline=Date.now()+20*60*1000;
   while(true){try{process.kill(pid,0);}catch{break;}if(Date.now()>deadline)throw Error('Close Among Us, then try again');await new Promise(r=>setTimeout(r,500));}
   applyFiles(files,roots,cache,path.join(folder,'backup-'+Date.now()));
@@ -88,7 +93,7 @@ async function main(){
   }
   const marker=path.join(root,'ForgerSetup','installed.json');const data=fs.existsSync(marker)?JSON.parse(fs.readFileSync(marker,'utf8')):{};
   data.Version=manifest.version;fs.writeFileSync(marker,JSON.stringify(data,null,2));
-  status(`Updated to ${manifest.version}. Launch Among Us through Steam.`);
- }catch(error){status('Update failed: '+error.message+'. Relaunch the game to retry.');process.exitCode=1;}
+  status(`Updated to ${manifest.version}. Launch Among Us through Steam.`,{phase:'complete'});
+ }catch(error){status('Update failed: '+error.message+'. Relaunch the game to retry.',{phase:'failed'});process.exitCode=1;}
 }
 if(process.argv[2]==='--apply'&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url))await main();
