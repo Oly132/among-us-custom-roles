@@ -12,9 +12,31 @@ public sealed class AutoUpdateUI:MonoBehaviour
     string version="",message="";
     string previousStatus="";
     bool checkedOnce,noticeRead,declined,starting;
+    string progressPath="";
+    float nextProgressRead;
+    bool downloaded;
+    long downloadedBytes,totalBytes;
     public AutoUpdateUI(IntPtr p):base(p){}
     void Update()
     {
+        if(starting && Time.unscaledTime>=nextProgressRead)
+        {
+            nextProgressRead=Time.unscaledTime+.25f;
+            try
+            {
+                using var reader=new StreamReader(new FileStream(progressPath,FileMode.Open,FileAccess.Read,FileShare.ReadWrite|FileShare.Delete));
+                using var state=JsonDocument.Parse(reader.ReadToEnd());var root=state.RootElement;
+                if(root.TryGetProperty("version",out var v)&&v.GetString()==version)
+                {
+                    message=root.GetProperty("message").GetString()??"Downloading update…";
+                    if(root.TryGetProperty("downloadedBytes",out var bytes))downloadedBytes=bytes.GetInt64();
+                    if(root.TryGetProperty("totalBytes",out var total))totalBytes=total.GetInt64();
+                    var phase=root.GetProperty("phase").GetString();downloaded=phase=="downloaded";
+                    if(phase=="failed")starting=false;
+                }
+            }
+            catch(IOException){}catch(JsonException){}
+        }
         if(!noticeRead)
         {
             var menu=UnityEngine.Object.FindObjectOfType<MainMenuManager>();
@@ -58,10 +80,21 @@ public sealed class AutoUpdateUI:MonoBehaviour
             if(previousStatus.Length>0)GUI.Box(new Rect(45,610,700,50),previousStatus);
             if((manifest==null && message.Length==0)||declined)return;
             MenuInputGuard.Claim(new Rect(0,0,1280,720),true);
-            GUI.Box(new Rect(365,230,550,210),"CUSTOM ROLES UPDATE");
-            GUI.Label(new Rect(390,275,500,85),message.Length>0?message:$"Update {version} available. Download now?\nOnly changed files will download.\nAmong Us will close; close Silencer CrewLink too.");
-            if(!starting && GUI.Button(new Rect(400,377,225,40),message.Length>0?"Retry":"Yes · update and close"))StartUpdate();
-            if(!starting && GUI.Button(new Rect(655,377,225,40),"Not now"))declined=true;
+            GUI.Box(new Rect(345,210,590,285),"CUSTOM ROLES UPDATE");
+            GUI.Label(new Rect(370,255,540,90),message.Length>0?message:$"Update {version} available. Download now?\nOnly changed files will download.\nClose Silencer CrewLink before installing.");
+            if(starting)
+            {
+                var fraction=totalBytes>0?Mathf.Clamp01((float)downloadedBytes/totalBytes):0;
+                GUI.Box(new Rect(370,350,540,32),"");
+                if(fraction>0)GUI.DrawTexture(new Rect(374,354,532*fraction,24),Texture2D.whiteTexture);
+                GUI.Label(new Rect(370,389,540,30),totalBytes>0?$"{fraction*100:0}%  ·  {downloadedBytes/1048576d:0.0} / {totalBytes/1048576d:0.0} MB":"Preparing download…");
+                if(downloaded && GUI.Button(new Rect(390,435,500,40),"Download complete · close game to install"))Application.Quit();
+            }
+            else
+            {
+                if(GUI.Button(new Rect(380,435,245,40),message.Length>0?"Retry":"Yes · download update"))StartUpdate();
+                if(GUI.Button(new Rect(655,435,245,40),"Not now"))declined=true;
+            }
         }
         finally{GUI.matrix=old;}
     }
@@ -83,10 +116,12 @@ public sealed class AutoUpdateUI:MonoBehaviour
             using(var source=typeof(Plugin).Assembly.GetManifestResourceStream("Forger.Assets.apply-update.mjs")!)
             using(var output=File.Create(script))source.CopyTo(output);
             var plan=Path.Combine(folder,"manifest.json");File.WriteAllText(plan,manifest!);
+            progressPath=Path.Combine(folder,"status.json");previousStatus="";downloaded=false;downloadedBytes=totalBytes=0;
+            File.WriteAllText(progressPath,JsonSerializer.Serialize(new{version,phase="preparing",message="Preparing download…"}));
             var start=new ProcessStartInfo(runner){UseShellExecute=false,CreateNoWindow=true,WorkingDirectory=folder};
             foreach(var arg in new[]{script,"--apply",game,Environment.ProcessId.ToString(),plan})start.ArgumentList.Add(arg);
             var process=Process.Start(start)??throw new Exception("Updater could not start");
-            starting=true;Application.Quit();
+            starting=true;message="Preparing download…";
         }
         catch(Exception e){message="Update could not start: "+e.Message;Plugin.Instance.Log.LogWarning(message);}
     }

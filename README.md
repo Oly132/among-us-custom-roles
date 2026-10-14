@@ -30,3 +30,9 @@ dotnet build Forger.csproj -c Release -p:GameDir="C:/path/to/Among Us"
 ```
 
 Windows/Android/developer builds and packaging checks pass. Real server-connected Windows clients verified role assignment and ability buttons, Fat Guy first/second normal attacks, several abilities, Silencer countdown, and normal/neutral victory paths. This is not exhaustive every-map/every-role certification. Physical Steam Deck and the latest Android APK have not been live tested. Intermittent replay-lobby disconnection remains under investigation; create a fresh lobby if returning fails. See release notes for details.
+
+## Download progress in 0.15.9
+
+The update feeds now deliver the progress patch directly to users upgrading from older versions. The full Windows/Steam Deck installers stay unchanged; after a new desktop installation apply the small Windows Progress Patch or Steam Deck Progress Patch from the same release. The Android APK is refreshed (versionCode15, displayed version0.15.9). See [progress patch instructions](https://github.com/Oly132/among-us-custom-roles/releases/download/v0.15.9/PROGRESS-PATCH.md).
+
+Progress and verified completion appear for updates after this patch is installed; an older updater cannot show the new UI during the update that installs it. Exact source is the baseline release archive plus the Progress Source Patch archive. No testing tools are added to normal builds.
