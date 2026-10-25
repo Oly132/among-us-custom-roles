@@ -11,7 +11,7 @@ public sealed class AutoUpdateUI:MonoBehaviour
     string? manifest;
     string version="",message="";
     string previousStatus="";
-    bool checkedOnce,noticeRead,declined,starting;
+    bool checkedOnce,noticeRead,starting;
     string progressPath="";
     float nextProgressRead;
     bool downloaded;
@@ -19,6 +19,7 @@ public sealed class AutoUpdateUI:MonoBehaviour
     public AutoUpdateUI(IntPtr p):base(p){}
     void Update()
     {
+        if(manifest!=null && !starting && message.Length==0 && !Game.Local && !Game.Started && UnityEngine.Object.FindObjectOfType<MainMenuManager>())StartUpdate();
         if(starting && Time.unscaledTime>=nextProgressRead)
         {
             nextProgressRead=Time.unscaledTime+.25f;
@@ -64,6 +65,7 @@ public sealed class AutoUpdateUI:MonoBehaviour
             var bytes=await response.Content.ReadAsByteArrayAsync();if(bytes.Length>1024*1024)throw new Exception("Manifest too large");
             using var json=JsonDocument.Parse(bytes);var root=json.RootElement;
             if(root.GetProperty("schema").GetInt32()!=1 || root.GetProperty("repository").GetString()!=Repository)return;
+            if(!UpdatePolicy.IsMandatory(root))return;
             var installed=Version.Parse(typeof(Plugin).CustomAttributes.First(a=>a.AttributeType==typeof(BepInPlugin)).ConstructorArguments[2].Value!.ToString()!);
             if(!Version.TryParse(root.GetProperty("version").GetString(),out var available) || available<=installed)return;
             version=available.ToString();manifest=System.Text.Encoding.UTF8.GetString(bytes);
@@ -78,9 +80,9 @@ public sealed class AutoUpdateUI:MonoBehaviour
         try
         {
             if(previousStatus.Length>0)GUI.Box(new Rect(45,610,700,50),previousStatus);
-            if((manifest==null && message.Length==0)||declined)return;
+            if((manifest==null && message.Length==0))return;
             MenuInputGuard.Claim(new Rect(0,0,1280,720),true);
-            GUI.Box(new Rect(345,210,590,285),"CUSTOM ROLES UPDATE");
+            GUI.Box(new Rect(345,210,590,285),"MANDATORY CUSTOM ROLES UPDATE");
             GUI.Label(new Rect(370,255,540,90),message.Length>0?message:$"Update {version} available. Download now?\nOnly changed files will download.\nClose Silencer CrewLink before installing.");
             if(starting)
             {
@@ -93,7 +95,7 @@ public sealed class AutoUpdateUI:MonoBehaviour
             else
             {
                 if(GUI.Button(new Rect(380,435,245,40),message.Length>0?"Retry":"Yes · download update"))StartUpdate();
-                if(GUI.Button(new Rect(655,435,245,40),"Not now"))declined=true;
+                if(GUI.Button(new Rect(655,435,245,40),"Close game"))Application.Quit();
             }
         }
         finally{GUI.matrix=old;}
@@ -126,3 +128,4 @@ public sealed class AutoUpdateUI:MonoBehaviour
         catch(Exception e){message="Update could not start: "+e.Message;Plugin.Instance.Log.LogWarning(message);}
     }
 }
+

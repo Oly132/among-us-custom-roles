@@ -1,38 +1,38 @@
 # Among Us Custom Roles
 
-Every player needs the mod. [Read the role guide](ROLES.md).
+## 🔴 MANDATORY — 0.15.10 hotfix
 
-## Downloads
+[Download latest mandatory release](https://github.com/Oly132/among-us-custom-roles/releases/latest) · [Role guide](ROLES.md) · [Update channel rules](UPDATE-CHANNELS.md)
 
-Get **version 0.15.9** from [the latest release](https://github.com/Oly132/among-us-custom-roles/releases/latest).
+OFF now selects official Europe, preserves private addresses, skips role/cosmetic patches, and requires restarting before joining. The menu/updater remain loaded; OFF is not an uninstall. Saving a private address while OFF no longer selects that server.
 
-- **Windows Setup:** recommended normal installer; no testing UI. Close Among Us and Silencer CrewLink, install over the existing game folder, then launch through Steam.
-- **Steam Deck Experimental:** clean package. Extract in Desktop Mode and run `install.sh`; use Steam launch options `WINEDLLOVERRIDES="winhttp=n,b" %command%`. Physical Deck verification remains pending.
-- **Android Beta:** clean ARM64 Custom Roles Launcher; requires the supported installed Among Us 2026.9.29. Install over the previous launcher and launch the modded game through it. Set the host address using Custom server address. Google Play sign-in is unsupported through the launcher.
-- **Windows Testing Setup:** developer build only. Install into a separate copied game folder. Solo testing UI uses F9; normal automatic updates are disabled.
+| Platform | Choose this download |
+| --- | --- |
+| Windows PC (recommended) | **Windows-Setup.exe** |
+| Steam Deck / Linux Proton | **SteamDeck.zip** |
+| Android ARM64 | **Android-Beta.apk** |
+| Developers only | Windows-Testing-Setup.exe (test UI; manual updates) |
 
-Only the Windows developer build and its source archive include testing tools. Normal Windows, Deck, Android and clean source exclude them. Private QA logs and signing keys are not published. There is no working iOS build. Ask your host privately for the current HTTPS server address.
+Every custom-role player should update to **0.15.10** and restart before creating a fresh lobby. Older updater-enabled versions can jump directly here, including **0.15.0**. Their old Download confirmation may still require one click. From 0.15.10 onward, mandatory downloads automatically start on the main menu with progress and verified completion. Only changed files download. Missing updater/runtime or unsupported game builds require the appropriate installer.
 
-## Updates
+## 🟡 OPTIONAL PREVIEWS — manual only
 
-Windows and Steam Deck use `update-manifest.json` from the latest published release. Accept the in-game update prompt, then relaunch. Updates go directly to the newest supported version and download changed mod files only.
+Optional releases are GitHub **Pre-releases**, marked **OPTIONAL — MANUAL ONLY**. They are never Latest and never go on the live mandatory feed, so the game will not download them. Preview changes join the next mandatory release when ready. **No optional preview is being published with this hotfix.** Editing source code or README alone never triggers updates.
 
-Android checks [its matching update feed](https://github.com/Oly132/among-us-custom-roles/releases/tag/android-v0.15.9) for `android-update-manifest.json`. Mod updates require restarting; launcher changes require installing the new APK. Repository edits alone do not trigger updates.
+## Install and compatibility
 
-Everyone should update to the same version and create a fresh lobby. Main-menu Server address/Paste lets you change your host's address without reinstalling.
+Install over the existing mod; no uninstall is needed. Windows includes optional Silencer BetterCrewLink support. Deck uses Steam launch options `WINEDLLOVERRIDES="winhttp=n,b" %command%`. Android requires the installed ARM64 Among Us 2026.9.29; install the signed launcher APK over the previous launcher and open your mod profile. Google Play sign-in in the launcher remains unsupported. No working iOS installer is available.
+
+Normal Windows, Deck and Android packages have no testing UI. Only the Windows developer installer/source contain testing controls. Private QA files, signing keys and personal host addresses are excluded. Get the server address privately from your host.
+
+[Detailed installation guide](https://github.com/Oly132/among-us-custom-roles/releases/download/v0.15.10/INSTALL.md).
 
 ## Source and validation
 
-Root source is the clean Windows mod. Exact clean, developer and Android corresponding-source archives are attached to each release. Build with .NET and your legally owned supported Among Us plus initialized BepInEx IL2CPP references:
+Root source is the clean Windows mod. Exact clean, developer and Android corresponding-source archives are attached to the release. Build using .NET and your legally owned supported Among Us with initialized BepInEx IL2CPP references:
 
 ```powershell
 dotnet build Forger.csproj -c Release -p:GameDir="C:/path/to/Among Us"
 ```
 
-Windows/Android/developer builds and packaging checks pass. Real server-connected Windows clients verified role assignment and ability buttons, Fat Guy first/second normal attacks, several abilities, Silencer countdown, and normal/neutral victory paths. This is not exhaustive every-map/every-role certification. Physical Steam Deck and the latest Android APK have not been live tested. Intermittent replay-lobby disconnection remains under investigation; create a fresh lobby if returning fails. See release notes for details.
-
-## Download progress in 0.15.9
-
-The update feeds now deliver the progress patch directly to users upgrading from older versions. The full Windows/Steam Deck installers stay unchanged; after a new desktop installation apply the small Windows Progress Patch or Steam Deck Progress Patch from the same release. The Android APK is refreshed (versionCode15, displayed version0.15.9). See [progress patch instructions](https://github.com/Oly132/among-us-custom-roles/releases/download/v0.15.9/PROGRESS-PATCH.md).
-
-Progress and verified completion appear for updates after this patch is installed; an older updater cannot show the new UI during the update that installs it. Exact source is the baseline release archive plus the Progress Source Patch archive. No testing tools are added to normal builds.
+The hotfix passes Windows/Android/developer build checks and region/update regression checks. It has not been tested live on a physical Steam Deck or Android phone. Prior server-connected Windows tests covered role assignment/buttons, Fat Guy first/second attacks, several abilities, Silencer countdown and victory paths; this is not exhaustive every-map/every-role certification. Intermittent replay-lobby disconnection remains under investigation; create a fresh lobby if returning fails.

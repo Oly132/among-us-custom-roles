@@ -70,8 +70,8 @@ public sealed class ServerAddressUI:MonoBehaviour
             }
             if(GUI.Button(new Rect(875,280,135,45),"Paste")){try{address=GUIUtility.systemCopyBuffer;message="";editing=false;}catch(Exception error){message="Paste failed: "+error.Message;}}
             GUI.Label(new Rect(270,340,740,75),message);
-            if(GUI.Button(new Rect(270,445,350,50),"Save and select server"))
-            {try{ServerAddressStore.Save(address);address=ServerAddressStore.Normalize(address);message="Saved! Choose modded server in Online, then enter the room code.";}catch(Exception e){message="Could not save: "+e.Message;}}
+            if(GUI.Button(new Rect(270,445,350,50),ModMode.Enabled.Value?"Save and select server":"Save address (roles OFF)"))
+            {try{ServerAddressStore.Save(address);if(!ModMode.Enabled.Value)ModMode.SelectOfficialServer();address=ServerAddressStore.Normalize(address);message=ModMode.Enabled.Value?"Saved! Choose modded server in Online, then enter the room code.":"Address saved. Official server stays selected while roles are OFF.";}catch(Exception e){message="Could not save: "+e.Message;}}
             if(GUI.Button(new Rect(655,445,350,50),"Close"))open=false;
         }
         finally{GUI.matrix=old;}

@@ -23,7 +23,7 @@ internal static class CustomRoles
     }
     static float nextRequest;
     internal static void SendAssignment(int client=-1)=>Game.Send(243,w=>{w.Write((byte)1);w.Write(Game.Epoch);w.Write((byte)AssignedIds.Length);foreach(var id in AssignedIds)w.Write(id);},client);
-    internal static void Acknowledge()=>Game.Send(231,w=>{w.Write((byte)1);w.Write(Game.Epoch);w.Write("0.15.9");w.Write((byte)AssignedIds.Length);foreach(var id in AssignedIds)w.Write(id);},AmongUsClient.Instance.HostId);
+    internal static void Acknowledge()=>Game.Send(231,w=>{w.Write((byte)1);w.Write(Game.Epoch);w.Write("0.15.10");w.Write((byte)AssignedIds.Length);foreach(var id in AssignedIds)w.Write(id);},AmongUsClient.Instance.HostId);
     internal static void RequestAssignment()
     {
         if(Game.Host || !Game.Started || !Game.Local || Time.time<nextRequest)return;
@@ -167,6 +167,7 @@ internal static class CustomRoles
         return false;
     }
 }
+
 
 
 

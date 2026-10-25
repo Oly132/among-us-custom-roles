@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace Forger;
 
-[BepInPlugin("local.olivi.forger", "Forger", "0.15.9")]
+[BepInPlugin("local.olivi.forger", "Forger", "0.15.10")]
 public sealed class Plugin : BasePlugin
 {
     internal static Plugin Instance = null!;
@@ -21,7 +21,7 @@ public sealed class Plugin : BasePlugin
         menuHarmony.CreateClassProcessor(typeof(BlockNativeMouse)).Patch();
         menuHarmony.CreateClassProcessor(typeof(BlockNativeController)).Patch();
         ModMode.Configure();AddComponent<ModModeUI>();AddComponent<ServerAddressUI>();AddComponent<AutoUpdateUI>();
-        if(!ModMode.Loaded){Log.LogInfo("Custom roles disabled. Gameplay patches were not loaded; vanilla mode active.");return;}
+        if(!ModMode.Loaded){Log.LogInfo("Custom roles OFF. Role/cosmetic patches skipped; official region selected. Menu and updater only.");return;}
         Chance = Config.Bind("Forger", "Assignment chance", 100, new ConfigDescription("Chance to assign one Forger among the impostors.", new AcceptableValueRange<int>(0, 100)));
         Cooldown = Config.Bind("Forger", "Change evidence cooldown", 20f, new ConfigDescription("Seconds between successful changes.", new AcceptableValueRange<float>(0, 120)));
         Uses = Config.Bind("Forger", "Uses per game", 3, new ConfigDescription("Maximum successful changes per game.", new AcceptableValueRange<int>(1, 15)));
@@ -206,6 +206,12 @@ internal static class DetectiveCasePatch
         __result = Game.RoomName(room); return false;
     }
 }
+
+
+
+
+
+
 
 
 

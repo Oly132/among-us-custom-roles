@@ -15,6 +15,7 @@ internal static class MenuInputGuard
     {
         get
         {
+            if(ModMode.RestartRequired || ModMode.Error.Length>0)return true;
             if(Time.frameCount<=claimedUntil)return true;
             if(Game.Local || Game.Started)return false;
             var menu=UnityEngine.Object.FindObjectOfType<MainMenuManager>();
