@@ -27,6 +27,7 @@ public sealed class RadioReceiver:MonoBehaviour
     static readonly Dictionary<long,double> pings=new();
     static readonly HashSet<int> received=new();
     static readonly List<RadioWire.Frame> waiting=new();
+    static readonly Queue<Guid> retiredStreams=new();
     static float saveAt=-1;
     static int errors;
     static bool receiverEnabled;
@@ -58,6 +59,7 @@ public sealed class RadioReceiver:MonoBehaviour
         if(!InLobby || verifier==null || !sender || sender.Data==null || sender.Data.Disconnected)return;
         var f=RadioWire.Verify(bytes,verifier,AmongUsClient.Instance.GameId,sender.PlayerId);
         if(f==null)return;
+        if(retiredStreams.Contains(f.Stream))return;
         if(f.Kind==2){if(stream==f.Stream && owner==f.Player)Stop();return;}
         if(f.Kind==3)
         {
@@ -71,6 +73,8 @@ public sealed class RadioReceiver:MonoBehaviour
         if(stream!=f.Stream || lobby!=f.Lobby)
         {
             // One authenticated publisher per lobby; a new signed session replaces it.
+            if(lobby!=f.Lobby)retiredStreams.Clear();
+            else if(stream!=Guid.Empty){retiredStreams.Enqueue(stream);while(retiredStreams.Count>32)retiredStreams.Dequeue();}
             Stop();stream=f.Stream;owner=f.Player;lobby=f.Lobby;bestRtt=double.MaxValue;
             synchronized=sender.AmOwner;offset=0;nextPing=0;
         }
@@ -108,7 +112,8 @@ public sealed class RadioReceiver:MonoBehaviour
     static void Tick()
     {
         if(saveAt>0 && Time.unscaledTime>=saveAt){saveAt=-1;Plugin.Instance.Config.Save();}
-        if(!InLobby || (stream!=Guid.Empty && (lobby!=AmongUsClient.Instance.GameId || Now-lastSeen>2.5))){Stop();return;}
+        if(!InLobby){Stop();retiredStreams.Clear();return;}
+        if(stream!=Guid.Empty && (lobby!=AmongUsClient.Instance.GameId || Now-lastSeen>2.5)){Stop();return;}
         if(stream==Guid.Empty)return;
         EnsureProp();
         if(!PlayerControl.AllPlayerControls.ToArray().Any(p=>p && p.PlayerId==owner && p.Data!=null && !p.Data.Disconnected)){Stop();return;}
@@ -185,7 +190,16 @@ public sealed class RadioReceiver:MonoBehaviour
         clone.OnValueChange=new UnityEvent();clone.OnValueChange.AddListener((UnityAction)(()=>{volume.Value=Mathf.Clamp01(clone.Value);saveAt=Time.unscaledTime+.5f;}));
         // Native slider, text, colliders and controller navigation retain their layout/scaling.
         var musicPosition=music.transform.localPosition;var effectsPosition=effects.transform.localPosition;
-        float spacing=Mathf.Max(.5f,Mathf.Abs(musicPosition.y-effectsPosition.y));
+        float spacing=Mathf.Abs(musicPosition.y-effectsPosition.y);
+        if(spacing<.15f)spacing=.33f;
+        // Reserve a native row below audio. Keep its heading and controls above
+        // unchanged, and move the lower groups together to preserve their spacing.
+        var group=music.transform.parent;
+        if(group==effects.transform.parent && group.name=="SoundGroup" && group.parent)
+            foreach(var name in new[]{"ChatGroup","MiscGroup"})
+            {
+                var lower=group.parent.Find(name);if(lower)lower.localPosition+=Vector3.down*spacing;
+            }
         clone.transform.localPosition=new Vector3(musicPosition.x,Mathf.Min(musicPosition.y,effectsPosition.y)-spacing,musicPosition.z);
         if(clone.Title && !clone.Title.transform.IsChildOf(clone.transform))
         {
@@ -199,6 +213,8 @@ public sealed class RadioReceiver:MonoBehaviour
             clone.Title.text="Radio";
         }
         clone.SetValue(volume.Value);clone.gameObject.SetActive(music.gameObject.activeSelf);
+        if(menu.grabbedControllerButtons && menu.ControllerSelectable!=null && !menu.ControllerSelectable.Contains(clone))menu.ControllerSelectable.Add(clone);
+        Plugin.Instance.Log.LogInfo($"Radio native slider added: sfx={effectsPosition}, music={musicPosition}, radio={clone.transform.localPosition}");
     }
 }
 [HarmonyPatch(typeof(OptionsMenuBehaviour),nameof(OptionsMenuBehaviour.Start))]
