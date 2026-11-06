@@ -28,6 +28,7 @@
     <EmbeddedResource Include="Assets/steal.png" />
     <EmbeddedResource Include="Assets/apply-update.mjs" />
   </ItemGroup>
+  <ItemGroup><EmbeddedResource Include="Assets/lobby-radio.png" /></ItemGroup>
 </Project>
 
 

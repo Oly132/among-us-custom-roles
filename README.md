@@ -36,3 +36,7 @@ dotnet build Forger.csproj -c Release -p:GameDir="C:/path/to/Among Us"
 ```
 
 The hotfix passes Windows/Android/developer build checks and region/update regression checks. It has not been tested live on a physical Steam Deck or Android phone. Prior server-connected Windows tests covered role assignment/buttons, Fat Guy first/second attacks, several abilities, Silencer countdown and victory paths; this is not exhaustive every-map/every-role certification. Intermittent replay-lobby disconnection remains under investigation; create a fresh lobby if returning fails.
+
+## Lobby radio preview
+
+[Receiver documentation](RADIO.md). This branch contains only the receiver; the private broadcasting connector is not distributed.

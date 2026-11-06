@@ -1,0 +1,9 @@
+bin/
+obj/
+RadioPrivate/
+**/RadioPrivate/
+*.pk8
+*.pfx
+*-private-key*
+StartConnector*
+PrivateRadioPublisher*

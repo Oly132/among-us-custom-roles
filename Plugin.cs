@@ -26,6 +26,7 @@ public sealed class Plugin : BasePlugin
         Cooldown = Config.Bind("Forger", "Change evidence cooldown", 20f, new ConfigDescription("Seconds between successful changes.", new AcceptableValueRange<float>(0, 120)));
         Uses = Config.Bind("Forger", "Uses per game", 3, new ConfigDescription("Maximum successful changes per game.", new AcceptableValueRange<int>(1, 15)));
         Window = Config.Bind("Forger", "Change evidence window", 10f, new ConfigDescription("Seconds after your kill to select a false room. Reports close this window.", new AcceptableValueRange<float>(1, 60)));
+        Radio.RadioReceiver.Configure();AddComponent<Radio.RadioReceiver>();
         new Harmony("local.olivi.forger").PatchAll();
         AddComponent<ForgerUI>();
         
@@ -170,7 +171,7 @@ internal static class AssignmentPatch { static void Prefix(RoleManager __instanc
 [HarmonyPatch(typeof(HudManager), nameof(HudManager.Update))]
 internal static class UpdatePatch { static bool Prefix()=>Game.Local && Game.Local!.Data!=null; static void Postfix() { Game.Tick(); Cannibal.Tick(); DogOwner.Tick(); Puppeteer.Tick(); Faker.Tick(); Silencer.Tick(); } }
 [HarmonyPatch(typeof(PlayerControl), nameof(PlayerControl.HandleRpc))]
-    internal static class RpcPatch { static bool Prefix(PlayerControl __instance, byte callId, MessageReader reader) => MurderAuthority.Rpc(__instance,callId,reader) && Thief.Rpc(__instance,callId,reader) && Terrorist.Rpc(__instance,callId,reader) && DogOwner.Rpc(__instance,callId,reader) && Cannibal.Rpc(__instance,callId,reader) && CustomRoles.Rpc(__instance, callId, reader) && Silencer.Rpc(__instance, callId, reader) && Faker.Rpc(__instance, callId, reader) && Puppeteer.Rpc(__instance, callId, reader) && Game.Rpc(__instance, callId, reader); }
+    internal static class RpcPatch { static bool Prefix(PlayerControl __instance, byte callId, MessageReader reader) => Radio.RadioReceiver.Rpc(__instance,callId,reader) && MurderAuthority.Rpc(__instance,callId,reader) && Thief.Rpc(__instance,callId,reader) && Terrorist.Rpc(__instance,callId,reader) && DogOwner.Rpc(__instance,callId,reader) && Cannibal.Rpc(__instance,callId,reader) && CustomRoles.Rpc(__instance, callId, reader) && Silencer.Rpc(__instance, callId, reader) && Faker.Rpc(__instance, callId, reader) && Puppeteer.Rpc(__instance, callId, reader) && Game.Rpc(__instance, callId, reader); }
 [HarmonyPatch(typeof(PlayerControl), nameof(PlayerControl.MurderPlayer))]
 internal static class KillPatch
 {
