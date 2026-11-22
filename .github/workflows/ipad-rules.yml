@@ -1,0 +1,65 @@
+name: iPad native rules research
+on:
+  push:
+    branches: [feature/ipados-port]
+    paths: ["ipad/**", ".github/workflows/ipad-rules.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ipad-rules-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  compile-native-rules:
+    runs-on: macos-26
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
+        with:
+          dotnet-version: '10.0.x'
+      - name: Check the Apple build host
+        run: |
+          test "$(uname -m)" = arm64
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
+          dotnet --info
+      - name: Verify pinned shared rules
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib,json
+          root=Path('ipad')
+          for name,sha in json.loads((root/'shared-inputs.json').read_text()).items():
+              assert hashlib.sha256((root/'Shared'/name).read_bytes()).hexdigest()==sha,name
+          PY
+      - name: Run shared-rule boundary tests
+        run: dotnet run --project ipad/Tests/Tests.csproj -c Release
+      - name: Compile a native Mac library for ABI checks
+        run: dotnet publish ipad/Core/Forger.IPad.Rules.csproj -c Release -r osx-arm64 -p:PublishAot=true -o build/ipad-rules/macos
+      - name: Test from actual native C++ code
+        run: |
+          lib="$PWD/build/ipad-rules/macos/ForgerIPadRules.dylib"
+          test -f "$lib"
+          python3 ipad/verify_native_library.py "$lib" --platform macos --output build/ipad-rules/macos-proof.json
+          xcrun clang++ -std=c++17 -Iipad/Native ipad/Native/smoke.cpp "$lib" -Wl,-rpath,"$PWD/build/ipad-rules/macos" -o build/ipad-rules/native-smoke
+          build/ipad-rules/native-smoke
+      - name: Compile the iPad ARM64 rules library
+        run: dotnet publish ipad/Core/Forger.IPad.Rules.csproj -c Release -r ios-arm64 -p:BuildIpadNative=true -o build/ipad-rules/ios-arm64
+      - name: Check device platform and native exports
+        run: |
+          lib="$PWD/build/ipad-rules/ios-arm64/ForgerIPadRules.dylib"
+          python3 ipad/verify_native_library.py "$lib" --platform ios --output build/ipad-rules/ios-proof.json
+          xcrun vtool -show-build "$lib"
+          cp ipad/Native/forger_rules.h build/ipad-rules/
+          printf '%s\n' 'Research rules library only. NOT an app, IPA, installer, mod loader or gameplay validation.' > build/ipad-rules/NOT-AN-INSTALLER.txt
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ipad-rules-research-NOT-AN-INSTALLER
+          path: |
+            build/ipad-rules/ios-arm64/*.dylib
+            build/ipad-rules/*-proof.json
+            build/ipad-rules/forger_rules.h
+            build/ipad-rules/NOT-AN-INSTALLER.txt
+          if-no-files-found: error
+          retention-days: 7

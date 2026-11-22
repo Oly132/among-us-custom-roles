@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsAotCompatible>true</IsAotCompatible>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <NativeLib>Shared</NativeLib>
+    <AssemblyName>ForgerIPadRules</AssemblyName>
+    <PublishAot Condition="'$(BuildIpadNative)' == 'true'">true</PublishAot>
+    <PublishAotUsingRuntimePack Condition="'$(BuildIpadNative)' == 'true'">true</PublishAotUsingRuntimePack>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../Shared/EvidenceState.cs" Link="Shared/EvidenceState.cs" />
+    <Compile Include="../Shared/SilenceState.cs" Link="Shared/SilenceState.cs" />
+    <Compile Include="../Shared/StabbingProtection.cs" Link="Shared/StabbingProtection.cs" />
+    <Compile Include="../Shared/LockpickBudget.cs" Link="Shared/LockpickBudget.cs" />
+    <Compile Include="../Shared/ThiefState.cs" Link="Shared/ThiefState.cs" />
+    <Compile Include="../Shared/RoleRoster.cs" Link="Shared/RoleRoster.cs" />
+    <Compile Include="../Shared/RoleLottery.cs" Link="Shared/RoleLottery.cs" />
+  </ItemGroup>
+  <Target Name="RequireRealAppleBuildHost" BeforeTargets="PrepareForPublish" Condition="'$(BuildIpadNative)' == 'true'">
+    <Error Condition="!$([MSBuild]::IsOSPlatform('OSX'))" Text="An iOS NativeAOT library requires a macOS build host and the Apple SDK. A Windows DLL is not an iPad port." />
+    <Error Condition="'$(RuntimeIdentifier)' != 'ios-arm64'" Text="Use -r ios-arm64 for a physical iPad. Simulator/desktop output is not installable on iPadOS." />
+  </Target>
+</Project>

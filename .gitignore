@@ -1,0 +1,9 @@
+**/bin/
+**/obj/
+build/
+*.pk8
+*.p12
+*.pfx
+*.mobileprovision
+*.ipa
+RadioPrivate/
