@@ -40,3 +40,7 @@ BetterCrewLink and the private Spotify connector are not part of this preparatio
 ## Hosted Mac compiler check
 
 The isolated `iPad native rules research` workflow uses a standard ARM64 macOS runner and .NET 10. It first runs shared-rule checks, then compiles a native macOS library and calls it from real C++ code, then cross-compiles the iOS ARM64 library and verifies its Mach-O platform and exported symbols. Its research artifact is explicitly NOT an app or installer. It contains no game content, certificates or provisioning profiles and does not change any release/update feed. Copied shared inputs are pinned after LF line-ending normalization.
+
+## First Apple compiler result
+
+[Run 45044899665](https://github.com/Oly132/among-us-custom-roles/actions/runs/45044899665) succeeded on 22 November 2026: 37 shared-rule boundary checks, 23 native C++/NativeAOT checks on ARM64 macOS, and compilation/platform/export validation for the iOS ARM64 rules library. Its SHA-256 is `7e9b462f56314d8cc5df53fc6d8be93460eed3efc1657be1dc5f7f01c1aa26ee`. This proves compiler/ABI groundwork only; no signed game application, complete game adapter or iPad gameplay was tested.
