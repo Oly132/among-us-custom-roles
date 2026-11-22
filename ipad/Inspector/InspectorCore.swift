@@ -109,4 +109,46 @@ enum InspectorCore {
         let result = sysctlbyname("hw.optional.arm64", &arm, &length, nil, 0)
         return InspectionReport(macProcessor: result == 0 && arm == 1 ? "Apple Silicon" : "Intel or unknown", macOS: ProcessInfo.processInfo.operatingSystemVersionString, game: game, note: note)
     }
+    static func saveBuildInputs(_ input: URL, to destination: URL) throws {
+        let app = try findGame(input), game = try inspectGame(input)
+        guard !game.framework.encrypted, game.framework.applePlatform == 2 || game.framework.applePlatform == nil else {
+            throw InspectionError.invalid("These are not usable, unencrypted iOS development inputs. No files were exported.")
+        }
+        let sourceRoot = app.resolvingSymlinksInPath()
+        guard !destination.resolvingSymlinksInPath().path.hasPrefix(sourceRoot.path+"/") else {
+            throw InspectionError.invalid("Save the ZIP outside the original game application.")
+        }
+        let manager = FileManager.default
+        let temporary = manager.temporaryDirectory.appendingPathComponent("Forger-iPad-Inputs-"+UUID().uuidString,isDirectory:true)
+        try manager.createDirectory(at:temporary,withIntermediateDirectories:false)
+        defer {
+            if temporary.lastPathComponent.hasPrefix("Forger-iPad-Inputs-") && temporary.deletingLastPathComponent().standardizedFileURL == manager.temporaryDirectory.standardizedFileURL {
+                try? manager.removeItem(at:temporary)
+            }
+        }
+        // Exact allowlist: no Data folders, accounts, receipts, profiles or keys.
+        let files = [
+            ("Frameworks/UnityFramework.framework/UnityFramework","UnityFramework"),
+            ("Data/Managed/Metadata/global-metadata.dat","global-metadata.dat"),
+            ("Info.plist","Game-Info.plist")
+        ]
+        for (source,name) in files {
+            let file = app.appendingPathComponent(source).resolvingSymlinksInPath()
+            guard file.path.hasPrefix(sourceRoot.path+"/") else { throw InspectionError.invalid("A build input points outside the selected game application.") }
+            try manager.copyItem(at:file,to:temporary.appendingPathComponent(name))
+        }
+        let encoder = JSONEncoder(); encoder.outputFormatting = [.prettyPrinted,.sortedKeys]
+        try encoder.encode(report(game:game,note:"Private native build inputs only. Not an installer; do not publish.")).write(to:temporary.appendingPathComponent("build-report.json"))
+        try "Private development inputs from the selected local game. Not an installer. Do not publish game files. No account or signing data was collected.\n".write(to:temporary.appendingPathComponent("PRIVATE-READ-ME.txt"),atomically:true,encoding:.utf8)
+        // Build the zip separately, then copy it only after successful completion.
+        let archive = temporary.appendingPathComponent("inputs.zip")
+        let process = Process(); process.executableURL = URL(fileURLWithPath:"/usr/bin/zip")
+        process.currentDirectoryURL = temporary
+        process.arguments = ["-q",archive.path]+files.map{$0.1}+["build-report.json","PRIVATE-READ-ME.txt"]
+        let diagnostic = Pipe();process.standardError = diagnostic;process.standardOutput = FileHandle.nullDevice
+        try process.run();process.waitUntilExit()
+        guard process.terminationStatus == 0 else { throw InspectionError.invalid("The private archive could not be created.") }
+        let archiveData = try Data(contentsOf:archive,options:.mappedIfSafe)
+        try archiveData.write(to:destination,options:.atomic)
+    }
 }

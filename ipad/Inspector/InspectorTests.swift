@@ -28,6 +28,31 @@ import Foundation
         check(noGame.game == nil && !noGame.modInstalled && !noGame.playableIpadModAvailable,"No fake installer status")
         let text = String(decoding:reportData,as:UTF8.self)
         check(!text.contains(NSHomeDirectory()),"Report must not disclose home path")
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("Forger-Inspector-Fixture-"+UUID().uuidString,isDirectory:true)
+        try FileManager.default.createDirectory(at:root,withIntermediateDirectories:false)
+        defer { try? FileManager.default.removeItem(at:root) }
+        let app = root.appendingPathComponent("Fixture.app",isDirectory:true)
+        let framework = app.appendingPathComponent("Frameworks/UnityFramework.framework/UnityFramework")
+        let metadata = app.appendingPathComponent("Data/Managed/Metadata/global-metadata.dat")
+        try FileManager.default.createDirectory(at:framework.deletingLastPathComponent(),withIntermediateDirectories:true)
+        try FileManager.default.createDirectory(at:metadata.deletingLastPathComponent(),withIntermediateDirectories:true)
+        put(0,into:&fixture,at:72);try fixture.write(to:framework)
+        var meta = Data(repeating:0,count:8);put(0xfab11baf,into:&meta,at:0);put(31,into:&meta,at:4);try meta.write(to:metadata)
+        let info = ["CFBundleIdentifier":"com.innersloth.spacemafia","CFBundleShortVersionString":"fixture-version","CFBundleVersion":"1"]
+        try PropertyListSerialization.data(fromPropertyList:info,format:.xml,options:0).write(to:app.appendingPathComponent("Info.plist"))
+        try "do not export accounts".write(to:app.appendingPathComponent("account-test.txt"),atomically:true,encoding:.utf8)
+        let archive = root.appendingPathComponent("private-inputs.zip")
+        try InspectorCore.saveBuildInputs(app,to:archive)
+        let listing = Process();listing.executableURL = URL(fileURLWithPath:"/usr/bin/unzip");listing.arguments = ["-Z1",archive.path]
+        let pipe = Pipe();listing.standardOutput = pipe;try listing.run();listing.waitUntilExit()
+        let names = Set(String(decoding:pipe.fileHandleForReading.readDataToEndOfFile(),as:UTF8.self).split(separator:"\n").map(String.init))
+        check(names == Set(["UnityFramework","global-metadata.dat","Game-Info.plist","build-report.json","PRIVATE-READ-ME.txt"]),"Export exact private build-input allowlist only")
+        check(try Data(contentsOf:framework) == fixture,"Source framework remains unchanged")
+        do { try InspectorCore.saveBuildInputs(app,to:app.appendingPathComponent("bad.zip"));fatalError("Allowed writing into source game") }
+        catch { assertions += 1 }
+        put(1,into:&fixture,at:72);try fixture.write(to:framework)
+        do { try InspectorCore.saveBuildInputs(app,to:root.appendingPathComponent("encrypted.zip"));fatalError("Exported encrypted source") }
+        catch { assertions += 1 }
         print("PASS: \(assertions) native Mac inspector assertions. Fixtures only; no game or device accessed.")
     }
 }

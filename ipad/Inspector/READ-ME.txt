@@ -14,3 +14,6 @@ The app is locally/ad-hoc signed, not notarized by Apple. If macOS blocks it, op
 No game binaries/assets, serial numbers, usernames, home-directory paths, account information or passwords are included in the report.
 
 This version requires macOS 13 or later and includes both Intel and Apple Silicon binaries. Its parsing tests and compilation are checked in CI; real selection on your Mac is still needed.
+
+OPTIONAL PRIVATE BUILD INPUTS
+After a usable iOS game is selected, Save build inputs can export only UnityFramework, global-metadata.dat, the game Info.plist and a report. This ZIP contains original game build files: send it privately to the mod developer here, never put it on public GitHub. It is not an installer or full game copy. The tool never decrypts files or collects receipts, account data, Apple IDs, signing keys or provisioning profiles.
