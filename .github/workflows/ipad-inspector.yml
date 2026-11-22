@@ -35,7 +35,7 @@ jobs:
           PY
           codesign --force --deep --sign - "$app"
           codesign --verify --deep --strict "$app"
-          xcrun lipo -verify_arch arm64 x86_64 "$app/Contents/MacOS/AmongUsIPadCheck"
+          xcrun lipo "$app/Contents/MacOS/AmongUsIPadCheck" -verify_arch arm64 x86_64
           cp ipad/Inspector/READ-ME.txt build/inspector/READ-ME.txt
           ditto -c -k --sequesterRsrc --keepParent "$app" build/inspector/Among-Us-iPad-Check-Mac.zip
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
