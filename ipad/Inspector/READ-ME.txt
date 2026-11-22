@@ -1,0 +1,16 @@
+AMONG US - IPAD BUILD CHECK (MAC)
+
+This is a preparation/inspection tool, NOT the mod or an installer.
+It does not change the game or iPad, download game files, sign into an account, or upload anything.
+
+1. Unzip and open Among Us iPad Check.app on the Mac.
+2. If Among Us is installed on that Mac, click Choose Among Us and select it from Applications.
+3. Click Save report. Send the small Among-Us-iPad-build-report.json file back.
+
+If the game is not installed or cannot be selected, Save report still gives the Mac processor/version information. Do not buy anything.
+
+The app is locally/ad-hoc signed, not notarized by Apple. If macOS blocks it, opening this specific app may require System Settings > Privacy & Security > Open Anyway. Do not disable Gatekeeper or other system protection globally.
+
+No game binaries/assets, serial numbers, usernames, home-directory paths, account information or passwords are included in the report.
+
+This version requires macOS 13 or later and includes both Intel and Apple Silicon binaries. Its parsing tests and compilation are checked in CI; real selection on your Mac is still needed.

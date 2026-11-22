@@ -1,0 +1,48 @@
+name: Mac game build inspector
+on:
+  push:
+    branches: [feature/ipados-port]
+    paths: ["ipad/Inspector/**", ".github/workflows/ipad-inspector.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build-inspector:
+    runs-on: macos-26
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Test read-only inspection logic
+        run: |
+          mkdir -p build/inspector
+          xcrun swiftc -parse-as-library -swift-version 5 -O ipad/Inspector/InspectorCore.swift ipad/Inspector/InspectorTests.swift -o build/inspector/tests
+          build/inspector/tests
+      - name: Build a universal Mac application
+        run: |
+          app="$PWD/build/inspector/Among Us iPad Check.app"
+          mkdir -p "$app/Contents/MacOS"
+          sdk="$(xcrun --sdk macosx --show-sdk-path)"
+          for arch in arm64 x86_64; do
+            xcrun swiftc -parse-as-library -swift-version 5 -O -sdk "$sdk" -target "$arch-apple-macosx13.0" ipad/Inspector/InspectorCore.swift ipad/Inspector/InspectorApp.swift -framework AppKit -framework CryptoKit -o "build/inspector/check-$arch"
+          done
+          xcrun lipo -create build/inspector/check-arm64 build/inspector/check-x86_64 -output "$app/Contents/MacOS/AmongUsIPadCheck"
+          python3 - <<'PY'
+          from pathlib import Path
+          import plistlib
+          app=Path('build/inspector/Among Us iPad Check.app')
+          info={'CFBundleExecutable':'AmongUsIPadCheck','CFBundleIdentifier':'local.olivi.ipad-build-check','CFBundleName':'Among Us iPad Check','CFBundleDisplayName':'Among Us iPad Check','CFBundlePackageType':'APPL','CFBundleShortVersionString':'0.1.0','CFBundleVersion':'1','LSMinimumSystemVersion':'13.0','NSHighResolutionCapable':True}
+          (app/'Contents/Info.plist').write_bytes(plistlib.dumps(info))
+          PY
+          codesign --force --deep --sign - "$app"
+          codesign --verify --deep --strict "$app"
+          xcrun lipo -verify_arch arm64 x86_64 "$app/Contents/MacOS/AmongUsIPadCheck"
+          cp ipad/Inspector/READ-ME.txt build/inspector/READ-ME.txt
+          ditto -c -k --sequesterRsrc --keepParent "$app" build/inspector/Among-Us-iPad-Check-Mac.zip
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: Mac-game-build-inspector-NOT-THE-MOD
+          path: |
+            build/inspector/Among-Us-iPad-Check-Mac.zip
+            build/inspector/READ-ME.txt
+          if-no-files-found: error
+          retention-days: 14

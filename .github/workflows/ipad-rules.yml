@@ -2,7 +2,7 @@ name: iPad native rules research
 on:
   push:
     branches: [feature/ipados-port]
-    paths: ["ipad/**", ".github/workflows/ipad-rules.yml"]
+    paths: ["ipad/Core/**", "ipad/Shared/**", "ipad/Native/**", "ipad/Tests/**", "ipad/verify_native_library.py", "ipad/shared-inputs.json", ".github/workflows/ipad-rules.yml"]
   workflow_dispatch:
 permissions:
   contents: read
